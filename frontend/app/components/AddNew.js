@@ -4,11 +4,11 @@
 export default function AddNew({ onClick }) {
   return (
     <div
-      className="bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col items-center justify-center p-8 cursor-pointer hover:shadow-xl transition-shadow duration-300"
+      className="bg-transparent cursor-pointer flex flex-col items-center justify-center p-12 transition-transform duration-300 transform hover:scale-105 hover:shadow-lg overflow-visible"
       onClick={onClick}
     >
-      <span className="text-6xl font-bold text-black">+</span>
-      <p className="mt-4 text-lg font-semibold text-black">Add New</p>
+      <span className="text-7xl font-bold text-black">+</span>
+      <p className="mt-4 text-xl font-semibold text-black">Add New</p>
     </div>
   );
 }

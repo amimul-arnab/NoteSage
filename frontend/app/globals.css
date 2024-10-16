@@ -1,3 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.shadow-lg {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Regular shadow */
+}
+
+.shadow-xl:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Bolder shadow on hover */
+}
