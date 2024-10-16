@@ -1,11 +1,18 @@
-// app/login/page.js
 "use client";
 import Link from "next/link";
 import Image from "next/image";
 import GoogleButton from "react-google-button";
+import { useRouter } from "next/navigation"; // Import useRouter for redirection
 import LogoLight from "../assets/logo/NoteSageLogo_Light.png";
 
 export default function LoginPage() {
+  const router = useRouter(); // Initialize useRouter
+
+  const handleLogin = (e) => {
+    e.preventDefault(); // Prevent default form submission
+    router.push("/main"); // Redirect to the main page
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f9faf9] text-[#12150f]">
       <div className="w-full max-w-lg p-12 space-y-6 bg-white rounded-3xl shadow-lg">
@@ -24,7 +31,7 @@ export default function LoginPage() {
         >
           Sign In
         </h2>
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="Email"
@@ -36,7 +43,6 @@ export default function LoginPage() {
             className="w-full p-5 border border-gray-300 rounded-full"
           />
           <div className="mt-8">
-            {/* Added margin-top to add space between the password field and the button */}
             <button
               type="submit"
               className="w-full p-4 bg-[#61cc03] text-white font-semibold rounded-full"
