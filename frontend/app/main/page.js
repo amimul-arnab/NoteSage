@@ -1,6 +1,5 @@
-// frontend/app/main/page.js
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import SectionCard from "../components/SectionCard";
 import AddNew from "../components/AddNew";
@@ -8,53 +7,51 @@ import AddNew from "../components/AddNew";
 export default function MainPage() {
   const [isOpen, setIsOpen] = useState(true);
 
-  const courses = [
-    { title: 'Data Structures I', subtitle: 'For Data Structures CS211', progress: 61, href: '/flashcards/data-structures' },
-    { title: 'Chem II', subtitle: 'For Chemistry II CHEM 104', progress: 24, href: '/flashcards/chemistry' }
-  ];
+  useEffect(() => {
+    const storedState = localStorage.getItem('navbarOpen');
+    setIsOpen(storedState === 'true');
+  }, []);
 
   const handleToggleNavbar = () => {
-    setIsOpen(!isOpen);
+    const newState = !isOpen;
+    setIsOpen(newState);
+    localStorage.setItem('navbarOpen', newState);
   };
+
+  const marginLeft = isOpen ? 'ml-64' : 'ml-20';
 
   return (
     <div className="flex">
-      <Navbar isOpen={isOpen} onToggle={handleToggleNavbar} />
-      <div className={`p-10 w-full bg-[#f9faf9] flex flex-col gap-20 transition-all duration-300 ${isOpen ? 'ml-64' : 'ml-20'}`}>
-        <h1 className="text-6xl font-bold mb-12">
+      <Navbar isOpen={isOpen} onToggle={handleToggleNavbar} activePage="home" />
+      <div className={`p-10 w-full bg-[#f9faf9] flex flex-col gap-16 transition-all duration-300 ${marginLeft}`}>
+        <h1 className="text-6xl font-bold mb-10">
           Hello <span className="text-[#61cc03] font-bold">John Doe</span>
         </h1>
 
-        {/* Continue Learning Section */}
-        <section className="w-full mb-16">
-          <h2 className="text-4xl mb-8">Continue Learning</h2>
-          <div className="flex gap-8">
-            <AddNew />
-            {courses.map((course, index) => (
-              <SectionCard key={index} {...course} />
-            ))}
-          </div>
-        </section>
-
-        {/* View Notes Section */}
-        <section className="w-full mb-16">
-          <h2 className="text-4xl mb-8">View Notes</h2>
-          <div className="flex gap-8">
-            <AddNew />
-            {courses.map((course, index) => (
-              <SectionCard key={index} title={course.title} subtitle={course.subtitle} href={`/notes/${course.title}`} />
-            ))}
-          </div>
-        </section>
-
-        {/* Test Yourself Section */}
         <section className="w-full">
-          <h2 className="text-4xl mb-8">Test Yourself</h2>
-          <div className="flex gap-8">
+          <h2 className="text-4xl mb-6">Continue Learning</h2>
+          <div className="flex gap-8 overflow-visible">
             <AddNew />
-            {courses.map((course, index) => (
-              <SectionCard key={index} title={course.title} subtitle={course.subtitle} isTest href={`/test/${course.title}`} />
-            ))}
+            <SectionCard title="Data Structures I" subtitle="For Data Structures CS211" progress={61} href="/flashcards/data-structures" />
+            <SectionCard title="Chem II" subtitle="For Chemistry II CHEM 104" progress={24} href="/flashcards/chemistry" />
+          </div>
+        </section>
+
+        <section className="w-full">
+          <h2 className="text-4xl mb-6">View Notes</h2>
+          <div className="flex gap-8 overflow-visible">
+            <AddNew />
+            <SectionCard title="Data Structures I" subtitle="For Data Structures CS211" href="/notes/data-structures" />
+            <SectionCard title="Chem II" subtitle="For Chemistry II CHEM 104" href="/notes/chemistry" />
+          </div>
+        </section>
+
+        <section className="w-full">
+          <h2 className="text-4xl mb-6">Test Yourself</h2>
+          <div className="flex gap-8 overflow-visible">
+            <AddNew />
+            <SectionCard title="Data Structures I" subtitle="For Data Structures CS211" isTest href="/test/data-structures" />
+            <SectionCard title="Chem II" subtitle="For Chemistry II CHEM 104" isTest href="/test/chemistry" />
           </div>
         </section>
       </div>
