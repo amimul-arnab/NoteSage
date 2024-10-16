@@ -1,3 +1,4 @@
+// Navbar.js
 "use client";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -66,6 +67,28 @@ export default function Navbar({ activePage, onToggle, isOpen }) {
           {isOpen && <span className="ml-4 text-lg font-bold">Settings</span>}
         </Link>
       </nav>
+
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .w-64 {
+            width: 16rem;
+          }
+          .w-20 {
+            width: 5rem;
+          }
+          .text-lg {
+            font-size: 0.875rem;
+          }
+        }
+        @media (max-width: 480px) {
+          .w-64 {
+            width: 100%;
+          }
+          .w-20 {
+            width: 4rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

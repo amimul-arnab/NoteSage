@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
@@ -30,7 +31,7 @@ export default function MainPage() {
 
         <section className="w-full">
           <h2 className="text-4xl mb-6">Continue Learning</h2>
-          <div className="flex gap-8 overflow-visible">
+          <div className="flex gap-8 overflow-visible flex-wrap">
             <AddNew />
             <SectionCard title="Data Structures I" subtitle="For Data Structures CS211" progress={61} href="/flashcards/data-structures" />
             <SectionCard title="Chem II" subtitle="For Chemistry II CHEM 104" progress={24} href="/flashcards/chemistry" />
@@ -39,7 +40,7 @@ export default function MainPage() {
 
         <section className="w-full">
           <h2 className="text-4xl mb-6">View Notes</h2>
-          <div className="flex gap-8 overflow-visible">
+          <div className="flex gap-8 overflow-visible flex-wrap">
             <AddNew />
             <SectionCard title="Data Structures I" subtitle="For Data Structures CS211" href="/notes/data-structures" />
             <SectionCard title="Chem II" subtitle="For Chemistry II CHEM 104" href="/notes/chemistry" />
@@ -48,13 +49,44 @@ export default function MainPage() {
 
         <section className="w-full">
           <h2 className="text-4xl mb-6">Test Yourself</h2>
-          <div className="flex gap-8 overflow-visible">
+          <div className="flex gap-8 overflow-visible flex-wrap">
             <AddNew />
             <SectionCard title="Data Structures I" subtitle="For Data Structures CS211" isTest href="/test/data-structures" />
             <SectionCard title="Chem II" subtitle="For Chemistry II CHEM 104" isTest href="/test/chemistry" />
           </div>
         </section>
       </div>
+
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .${marginLeft} {
+            margin-left: 0;
+          }
+          .p-10 {
+            padding: 1.5rem;
+          }
+          .text-6xl {
+            font-size: 2.5rem;
+          }
+          .text-4xl {
+            font-size: 1.75rem;
+          }
+        }
+        @media (max-width: 480px) {
+          .p-10 {
+            padding: 1rem;
+          }
+          .text-6xl {
+            font-size: 2rem;
+          }
+          .text-4xl {
+            font-size: 1.5rem;
+          }
+          .flex {
+            flex-direction: column;
+          }
+        }
+      `}</style>
     </div>
   );
 }
