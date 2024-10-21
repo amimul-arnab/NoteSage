@@ -1,47 +1,39 @@
-// /app/components/AddNotebook.js
-
+// /app/components/EditNotebook.js
+"use client";
 import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid for generating unique IDs
 
-export default function AddNotebook({ onCreateNotebook, onClose }) {
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [image, setImage] = useState(null);
-
-  const handleSubmit = () => {
-    if (title && category && description) {
-      // Generate a unique ID for the notebook
-      const newNotebook = {
-        id: uuidv4(), // Unique ID
-        title,
-        category,
-        description,
-        image,
-      };
-      onCreateNotebook(newNotebook);
-      onClose(); // Close after adding
-    } else {
-      alert('Please fill out all fields.');
-    }
-  };
+export default function EditNotebook({ notebook, onSaveChanges, onDelete, onClose }) {
+  const [title, setTitle] = useState(notebook.title);
+  const [category, setCategory] = useState(notebook.category);
+  const [description, setDescription] = useState(notebook.description);
+  const [image, setImage] = useState(notebook.image);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
     reader.onloadend = () => {
-      setImage(reader.result); // Store base64 encoded image
+      setImage(reader.result); // Store base64 image string
     };
-    if (file) {
-      reader.readAsDataURL(file);
-    }
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = () => {
+    // Ensure the ID is not changed
+    const updatedNotebook = {
+      ...notebook, // Spread notebook to keep ID
+      title,
+      category,
+      description,
+      image,
+    };
+    onSaveChanges(updatedNotebook); // Save the updated notebook
   };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg w-1/2 relative">
-        <h2 className="text-2xl font-bold mb-4">Create Notebook</h2>
-        <button onClick={onClose} className="absolute top-2 right-4">X</button>
+        <h2 className="text-2xl font-bold mb-4">Edit Notebook</h2>
+        <button onClick={onClose} className="absolute top-2 right-4 text-xl">X</button>
 
         <input
           type="text"
@@ -50,6 +42,7 @@ export default function AddNotebook({ onCreateNotebook, onClose }) {
           onChange={(e) => setTitle(e.target.value)}
           className="border rounded p-2 w-full mb-4"
         />
+        
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -63,11 +56,7 @@ export default function AddNotebook({ onCreateNotebook, onClose }) {
           <option value="History">History</option>
           <option value="Custom">Custom</option>
         </select>
-        <input
-          type="file"
-          onChange={handleImageUpload}
-          className="border rounded p-2 w-full mb-4"
-        />
+        
         <textarea
           placeholder="Description"
           value={description}
@@ -75,11 +64,20 @@ export default function AddNotebook({ onCreateNotebook, onClose }) {
           className="border rounded p-2 w-full mb-4"
         />
 
-        <button
-          className="bg-green-500 text-white py-2 px-4 rounded w-full"
-          onClick={handleSubmit}
+        <input type="file" onChange={handleImageUpload} className="border rounded p-2 w-full mb-4" />
+        
+        <button 
+          className="bg-green-500 text-white py-2 px-4 rounded w-full mb-4" 
+          onClick={handleSave}
         >
-          Generate Notes
+          Save Changes
+        </button>
+
+        <button 
+          className="bg-red-500 text-white py-2 px-4 rounded w-full" 
+          onClick={() => onDelete(notebook.id)}
+        >
+          Delete Notebook
         </button>
       </div>
     </div>

@@ -1,3 +1,5 @@
+// /Users/amimularnab/notesage/frontend/app/notes/[notebookId]/page.js
+
 "use client";
 import NotebookPage from '@/app/components/NotebookPage'; // Ensure correct import path
 import { useParams } from 'next/navigation';
@@ -9,13 +11,17 @@ export default function DynamicNotebookPage() {
   const [content, setContent] = useState(''); // State for Quill editor content
 
   useEffect(() => {
-    // Retrieve the notebook data from localStorage based on notebookId
+    console.log('notebookId:', notebookId); // Log the notebook ID for debugging
     const storedNotebooks = JSON.parse(localStorage.getItem('notebooks')) || [];
     const currentNotebook = storedNotebooks.find((nb) => nb.id === notebookId);
     
+    console.log('Stored Notebooks:', storedNotebooks); // Log all stored notebooks
+    console.log('Current Notebook:', currentNotebook); // Log the notebook if found
+
     if (currentNotebook) {
       setNotebook(currentNotebook);
       const savedContent = localStorage.getItem(`notebook-${notebookId}`);
+      console.log('Saved Content:', savedContent); // Log the saved content if found
       setContent(savedContent || ''); // Load saved content from localStorage or empty string
     }
   }, [notebookId]);
@@ -23,6 +29,7 @@ export default function DynamicNotebookPage() {
   const handleContentChange = (value) => {
     setContent(value); // Update content in state
     localStorage.setItem(`notebook-${notebookId}`, value); // Auto-save content to localStorage
+    console.log('Content Saved for Notebook:', notebookId); // Log when content is saved
   };
 
   if (!notebook) {

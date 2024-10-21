@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import AddNotebook from '../components/AddNotebook';
 import NotebookDisplay from '../components/NotebookDisplay';
+import EditNotebook from '../components/EditNotebook';
 
 export default function NotesPage() {
   const [isOpen, setIsOpen] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [notebooks, setNotebooks] = useState([]);
+  const [editNotebook, setEditNotebook] = useState(null);
 
   useEffect(() => {
     const savedNotebooks = JSON.parse(localStorage.getItem('notebooks')) || [];
@@ -22,10 +25,31 @@ export default function NotesPage() {
   };
 
   const handleAddNotebook = (notebook) => {
-    const updatedNotebooks = [...notebooks, { ...notebook, id: Date.now() }];
+    const updatedNotebooks = [...notebooks, { ...notebook }];
     setNotebooks(updatedNotebooks);
     localStorage.setItem('notebooks', JSON.stringify(updatedNotebooks)); // Save to localStorage
     setShowPopup(false);
+    console.log('Adding Notebook:', notebook);
+  };
+
+  const handleEditNotebook = (notebook) => {
+    setEditNotebook(notebook); // Set the notebook to be edited
+    setShowEdit(true); // Show the edit popup
+  };
+
+  const handleDeleteNotebook = (id) => {
+    const updatedNotebooks = notebooks.filter((nb) => nb.id !== id);
+    setNotebooks(updatedNotebooks);
+    localStorage.setItem('notebooks', JSON.stringify(updatedNotebooks)); // Update localStorage
+  };
+
+  const handleSaveChanges = (updatedNotebook) => {
+    const updatedNotebooks = notebooks.map((nb) =>
+      nb.id === updatedNotebook.id ? updatedNotebook : nb
+    );
+    setNotebooks(updatedNotebooks);
+    localStorage.setItem('notebooks', JSON.stringify(updatedNotebooks)); // Save to localStorage
+    setShowEdit(false); // Close edit popup
   };
 
   const handleClearNotebooks = () => {
@@ -51,10 +75,14 @@ export default function NotesPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 mt-10">
           {notebooks.length > 0 ? (
-            notebooks.map((notebook, index) => (
-              <NotebookDisplay key={index} {...notebook} />
+            notebooks.map((notebook) => (
+              <NotebookDisplay
+                key={notebook.id}
+                {...notebook}
+                onEdit={() => handleEditNotebook(notebook)}
+              />
             ))
           ) : (
             <p>No notebooks yet. Add a new notebook to get started.</p>
@@ -62,6 +90,14 @@ export default function NotesPage() {
         </div>
 
         {showPopup && <AddNotebook onCreateNotebook={handleAddNotebook} onClose={() => setShowPopup(false)} />}
+        {showEdit && editNotebook && (
+          <EditNotebook
+            notebook={editNotebook}
+            onSaveChanges={handleSaveChanges}
+            onDelete={() => handleDeleteNotebook(editNotebook.id)}
+            onClose={() => setShowEdit(false)}
+          />
+        )}
       </div>
     </div>
   );
