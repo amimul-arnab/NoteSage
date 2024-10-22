@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
+import 'react-quill/dist/quill.snow.css'; // Import Quill CSS
 
-// Dynamically import the Quill editor
+// Dynamically import the ReactQuill component to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
-import 'react-quill/dist/quill.snow.css'; // Import Quill styles
 
 export default function NotebookPage() {
   const { notebookId } = useParams(); // Get notebookId from the URL
@@ -29,12 +29,36 @@ export default function NotebookPage() {
     localStorage.setItem(`notebook-${notebookId}`, value); // Save content to localStorage
   };
 
+  const modules = {
+    toolbar: [
+      [{ font: [] }, { size: [] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ align: [] }, { list: 'ordered' }, { list: 'bullet' }],
+      ['blockquote', 'code-block'],
+      [{ script: 'sub' }, { script: 'super' }],
+      ['link', 'image'],
+      [{ color: [] }, { background: [] }],
+      ['clean'],
+    ],
+  };
+
+  const formats = [
+    'font', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'align', 'list', 'bullet',
+    'blockquote', 'code-block',
+    'script',
+    'link', 'image',
+    'color', 'background',
+  ];
+
   if (!notebook) {
     return <p>Notebook not found</p>;
   }
 
   return (
     <div className="p-10 bg-white min-h-screen">
+      {/* Render only one header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-4xl font-bold">{notebook.title}</h1>
@@ -50,15 +74,19 @@ export default function NotebookPage() {
         )}
       </div>
 
-      {/* Rich Text Editor */}
-      <ReactQuill
-        value={content}
-        onChange={handleContentChange}
-        theme="snow"
-        placeholder="Start typing your notes here..."
-        className="mt-8"
-        style={{ height: '500px' }}
-      />
+      {/* Rich Text Editor with full toolbar */}
+      <div className="quill-container mt-6">
+        <ReactQuill
+          value={content}
+          onChange={handleContentChange}
+          modules={modules}
+          formats={formats}
+          theme="snow"
+          placeholder="Start typing your notes here..."
+          className="mt-8"
+          style={{ height: '500px' }}
+        />
+      </div>
     </div>
   );
 }

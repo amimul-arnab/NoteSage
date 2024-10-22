@@ -33,6 +33,23 @@ body {
   margin-bottom: 1rem;
 }
 
+.quill-container {
+  max-width: 800px;
+  margin: 0 auto; /* Center the editor horizontally */
+  padding: 2rem;
+  background-color: white;
+}
+
+/* Remove default border */
+.ql-container {
+  border: none !important;
+}
+
+/* Remove default margin for cleaner look */
+.ql-toolbar {
+  margin-bottom: 1rem;
+}
+
 /* Media Queries for Responsiveness */
 @media (max-width: 1024px) {
   .text-6xl {
