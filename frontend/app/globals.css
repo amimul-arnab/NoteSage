@@ -93,3 +93,11 @@ body {
     flex-direction: column;
   }
 }
+
+.math-node {
+  font-family: 'KaTeX_Main', 'Times New Roman', serif;
+  color: #333;
+  background-color: #f0f0f0;
+  padding: 2px 4px;
+  border-radius: 4px;
+}

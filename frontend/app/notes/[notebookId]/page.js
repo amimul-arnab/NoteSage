@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 export default function DynamicNotebookPage() {
   const { notebookId } = useParams(); // Get the notebookId from the URL
   const [notebook, setNotebook] = useState(null);
-  const [content, setContent] = useState(''); // State for Quill editor content
+  const [content, setContent] = useState(''); // State for editor content
 
   useEffect(() => {
     const storedNotebooks = JSON.parse(localStorage.getItem('notebooks')) || [];
@@ -18,11 +18,6 @@ export default function DynamicNotebookPage() {
       setContent(savedContent || ''); // Load saved content from localStorage or empty string
     }
   }, [notebookId]);
-
-  const handleContentChange = (value) => {
-    setContent(value); // Update content in state
-    localStorage.setItem(`notebook-${notebookId}`, value); // Auto-save content to localStorage
-  };
 
   if (!notebook) {
     return <p>Notebook not found</p>; // Show a message if the notebook is not found
@@ -37,7 +32,6 @@ export default function DynamicNotebookPage() {
         category={notebook.category}
         image={notebook.image}
         content={content}
-        onContentChange={handleContentChange} // Pass the content change handler to the NotebookPage
       />
     </div>
   );
