@@ -33,23 +33,6 @@ body {
   margin-bottom: 1rem;
 }
 
-.quill-container {
-  max-width: 800px;
-  margin: 0 auto; /* Center the editor horizontally */
-  padding: 2rem;
-  background-color: white;
-}
-
-/* Remove default border */
-.ql-container {
-  border: none !important;
-}
-
-/* Remove default margin for cleaner look */
-.ql-toolbar {
-  margin-bottom: 1rem;
-}
-
 /* Media Queries for Responsiveness */
 @media (max-width: 1024px) {
   .text-6xl {
@@ -101,3 +84,116 @@ body {
   padding: 2px 4px;
   border-radius: 4px;
 }
+
+.toolbar-container {
+  position: absolute;
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: none;
+  border: none;
+  font-family: 'Poppins', sans-serif;
+  transform: translateX(-50%); /* Center horizontally */
+}
+
+.toolbar-container .relative {
+  position: relative;
+}
+
+.toolbar-button {
+  margin: 0 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-container.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-20px); /* Slide up when hidden */
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.text-dropdown:hover .dropdown-menu,
+.text-color-dropdown:hover .dropdown-menu,
+.bg-color-dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.latex-input-container,
+.link-button input {
+  display: none;
+}
+
+.latex-button:hover .latex-input-container,
+.link-button:hover input {
+  display: block;
+  position: absolute;
+  top: 30px;
+  left: 0;
+  width: 150px;
+  border: 1px solid #ddd;
+  padding: 5px;
+  background-color: white;
+  border-radius: 4px;
+}
+
+.editor-container {
+  position: relative;
+}
+
+.rich-text-toolbar {
+  position: absolute;
+  top: 0; /* Reset top positioning */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -100%); /* Move above the selected text */
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 12px; /* Adjust padding for a cleaner look */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000; /* Ensure it’s above other elements */
+  font-family: 'Poppins', sans-serif;
+}
+
+.toolbar-btn {
+  font-size: 1.5rem;
+  padding: 0.5rem;
+  margin: 0.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.animated-toolbar {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.relative:hover .dropdown-menu {
+  display: block;
+}
+
+/* Initial state when hidden */
+[data-tippy-root] .tippy-content {
+  opacity: 0;
+  transform: translateY(-10px); /* Start slightly above */
+}
+
+/* Visible state */
+[data-tippy-root][data-show] .tippy-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
