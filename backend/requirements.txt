@@ -1,0 +1,7 @@
+Flask
+pymongo
+Flask-JWT-Extended
+Flask-OAuthlib
+boto3
+python-dotenv
+marshmallo
