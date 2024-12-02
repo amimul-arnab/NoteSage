@@ -1,7 +1,10 @@
 Flask
+flask-jwt-extended
+flask-cors
 pymongo
-Flask-JWT-Extended
-Flask-OAuthlib
 boto3
-python-dotenv
-
+dotenv
+openai
+werkzeug
+click
+requests
