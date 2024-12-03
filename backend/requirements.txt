@@ -3,7 +3,7 @@ flask-jwt-extended
 flask-cors
 pymongo
 boto3
-dotenv
+python-dotenv
 openai
 werkzeug
 click
