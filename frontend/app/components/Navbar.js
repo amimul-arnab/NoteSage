@@ -9,11 +9,50 @@ import FlashcardIcon from '../assets/flashcard.png';
 import TestIcon from '../assets/exam.png';
 import SettingsIcon from '../assets/profile.png';
 import LogoLight from '../assets/logo/NoteSageLogo_Light.png';
+import LogoutIcon from '../assets/logout.png';
+import { useRouter } from "next/navigation";
 
 export default function Navbar({ activePage, onToggle, isOpen }) {
   const toggleNavbar = () => {
     const newState = !isOpen;
     onToggle(newState);
+  };
+
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      try {
+        const response = await fetch("http://localhost:5000/auth/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          // Successfully logged out on backend
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          router.push("/login");
+        } else {
+          // Even if the backend logout fails, we can still clear tokens locally
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          router.push("/login");
+        }
+      } catch (error) {
+        console.error("Logout error:", error);
+        // Clear tokens and redirect anyway
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        router.push("/login");
+      }
+    } else {
+      // No token found, just redirect to login
+      router.push("/login");
+    }
   };
 
   return (
@@ -22,6 +61,7 @@ export default function Navbar({ activePage, onToggle, isOpen }) {
         isOpen ? 'w-64' : 'w-20'
       } fixed top-0 left-0 transition-width duration-300 ease-in-out z-50`}
     >
+      <Link href="/main">
       <div className="flex flex-col items-center p-4 bg-white">
         <Image
           src={LogoLight}
@@ -31,6 +71,7 @@ export default function Navbar({ activePage, onToggle, isOpen }) {
           className="object-contain mb-1"
         />
       </div>
+      </Link>
 
       <nav className="flex-1 mt-6 flex flex-col space-y-4 bg-[#61cc03]">
         <button
@@ -66,6 +107,20 @@ export default function Navbar({ activePage, onToggle, isOpen }) {
           <Image src={SettingsIcon} alt="Settings" width={30} height={30} className="invert" />
           {isOpen && <span className="ml-4 text-lg font-bold">Settings</span>}
         </Link>
+
+        <button
+          onClick={handleLogout}
+          className={`flex items-center px-6 py-3 text-white ${activePage === 'logout' && 'bg-[#a1e194]'}`}
+        >
+          <Image
+            src={LogoutIcon} // Replace with a logout icon if available, otherwise reuse SettingsIcon
+            alt="Logout"
+            width={30}
+            height={30}
+            className="invert"
+          />
+          {isOpen && <span className="ml-4 text-lg font-bold">Logout</span>}
+        </button>
       </nav>
 
       <style jsx>{`

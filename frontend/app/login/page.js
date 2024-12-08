@@ -59,13 +59,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#f9faf9] text-[#12150f]">
       <div className="w-full max-w-lg p-12 space-y-6 bg-white rounded-3xl shadow-lg">
         <div className="flex justify-center mb-2">
-          <Image
-            src={LogoLight}
-            alt="NoteSage Logo"
-            width={150}
-            height={150}
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image
+              src={LogoLight}
+              alt="NoteSage Logo"
+              width={150}
+              height={150}
+              className="object-contain"
+            />
+          </Link>
         </div>
         <h2
           className="text-center text-3xl font-bold"
