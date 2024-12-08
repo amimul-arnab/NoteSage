@@ -38,9 +38,7 @@ export default function SignupPage() {
         // If the response is not ok, show error message from the server
         setErrorMessage(data.error || "An error occurred during signup.");
       } else {
-        // On success, you might want to save tokens returned by Flask
-        // Example: localStorage or a cookie (for demonstration, localStorage)
-        // In production, consider a more secure storage method.
+        // On success, save tokens returned by Flask
         if (data.access_token) {
           localStorage.setItem("access_token", data.access_token);
         }
