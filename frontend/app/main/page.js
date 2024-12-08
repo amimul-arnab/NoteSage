@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
@@ -7,6 +6,7 @@ import AddNew from "../components/AddNew";
 
 export default function MainPage() {
   const [isOpen, setIsOpen] = useState(true);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const storedState = localStorage.getItem('navbarOpen');
@@ -21,12 +21,45 @@ export default function MainPage() {
 
   const marginLeft = isOpen ? 'ml-64' : 'ml-20';
 
+  useEffect(() => {
+    // Fetch user info from the Flask backend
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      fetch("http://localhost:5000/auth/me", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.full_name) {
+            setUserName(data.full_name);
+          } else if (data.email) {
+            // If no full name provided, fallback to email username part
+            setUserName(data.email.split("@")[0]);
+          } else {
+            // If no user data, set a default name
+            setUserName("User");
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching user data:", err);
+          setUserName("User");
+        });
+    } else {
+      // If no token, fallback name
+      setUserName("User");
+    }
+  }, []);
+
   return (
     <div className="flex">
       <Navbar isOpen={isOpen} onToggle={handleToggleNavbar} activePage="home" />
       <div className={`p-10 w-full bg-[#f9faf9] flex flex-col gap-16 transition-all duration-300 ${marginLeft}`}>
         <h1 className="text-6xl font-bold mb-10">
-          Hello <span className="text-[#61cc03] font-bold">John Doe</span>
+          Hello <span className="text-[#61cc03] font-bold">{userName || "User"}</span>
         </h1>
 
         <section className="w-full">
