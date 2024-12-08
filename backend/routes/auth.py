@@ -46,6 +46,7 @@ def is_valid_password(password):
         return False
     return True
 
+
 @auth_bp.route('/signup', methods=['POST', 'OPTIONS'])
 @cross_origin()
 def signup():
@@ -54,11 +55,17 @@ def signup():
             return jsonify({}), 200
             
         data = request.get_json()
-        if not all(k in data for k in ('email', 'password')):
+        required_fields = ('email', 'password', 'full_name')
+        if not all(k in data for k in required_fields):
             return jsonify({'error': 'Missing required fields'}), 400
 
         email = data['email']
         password = data['password']
+        full_name = data['full_name'].strip()
+
+        # Validate full_name
+        if not full_name:
+            return jsonify({'error': 'Name cannot be empty'}), 400
 
         # Validate email format
         if not is_valid_email(email):
@@ -74,7 +81,7 @@ def signup():
 
         # Hash password and create user
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        user = User(email, password_hash)
+        user = User(email, password_hash, full_name=full_name)
         users_collection.insert_one(user.__dict__)
         
         # Create tokens
@@ -90,6 +97,7 @@ def signup():
     except Exception as e:
         logging.error(f"Signup error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
+
 
 @auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 @cross_origin()
@@ -166,6 +174,7 @@ def get_user_profile():
         
         return jsonify({
             'email': user['email'],
+            'full_name': user.get('full_name', None),
             'created_at': user.get('created_at', None)
         }), 200
     except Exception as e:

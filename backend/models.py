@@ -2,9 +2,10 @@ from datetime import datetime
 from bson import ObjectId
 
 class User:
-    def __init__(self, email, password_hash):
+    def __init__(self, email, password_hash, full_name=None):
         self.email = email
         self.password_hash = password_hash
+        self.full_name = full_name
         self.created_at = datetime.utcnow()
 
 class Note:
