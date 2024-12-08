@@ -46,7 +46,7 @@ Replace `<your_*_key>` with the actual keys you need.
 
 To start the Flask development server, run:
 ```bash
-flask run
+python -m dotenv .env run flask run
 ```
 The application should now be running locally on `http://127.0.0.1:5000/`.
 
