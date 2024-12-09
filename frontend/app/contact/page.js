@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import LogoLight from "../assets/logo/NoteSageLogo_Light.png";
+import GitHub from "../assets/github.png";
 
 export default function LandingPage() {
   return (
@@ -31,48 +32,35 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="flex flex-col items-center gap-16 p-8 md:p-12">
-        <FeatureItem
-          title="Study Guide Generated"
-          description="Simply upload your notes and create a customized study guide just for you, saving you time from creating your own."
-        />
-
-        <FeatureItem
-          title="Active Learning with "
-          description="Trouble learning a concept? No problem, SageAI has you covered. Simplify your notes to dive further into a concept and help you remember better."
-          highlight="SageAI"
-        />
-
-        <FeatureItem
-          title="Learn with Flashcards"
-          description="Convert your notes into flashcards to help you learn and memorize important concepts."
-        />
-
-        <FeatureItem
-          title="Test Your Knowledge"
-          description="Turn your notes and flashcards into generated exams to help ace your classes."
-        />
-      </section>
-
-      {/* Neurodivergent Friendly Banner */}
+      {/* Contact Banner */}
       <section className="flex flex-col md:flex-row items-center justify-between p-8 md:p-16 text-white bg-gradient-to-r from-[#0097b2] to-[#7ed957]">
         <div className="md:w-1/2 text-center md:text-left flex flex-col justify-center">
           <h2 className="text-4xl md:text-6xl font-bold mb-4">
-            Neurodivergent Friendly
+            Contact
           </h2>
           <p className="text-xl md:text-2xl">
-            At NoteSage, we know learning can be a challenge for those who think
-            differently. We're here to make it easier, guiding you every step of
-            the way to unlock your full potential with care and understanding.
+            Your feedback is appreciated! To contact the developers, reach out to us on GitHub 
+            <Link href="https://github.com/amimul-arnab/notesage"><span className="text-[#61cc03]"> here</span></Link>.
           </p>
         </div>
         <div className="md:w-1/2 flex justify-center md:justify-end mt-8 md:mt-0">
           <div className="w-48 h-48 bg-white rounded-full flex items-center justify-center">
-            <span className="text-7xl text-gray-400">📷</span>
+            <span className="text-7xl text-gray-400">
+            <Link href="https://github.com/amimul-arnab/notesage">
+                <Image
+                src={GitHub}
+                alt="NoteSage Logo"
+                width={400}
+                height={400}
+                className="object-contain"
+                />
+            </Link>
+            </span>
           </div>
         </div>
       </section>
+
+
 
       {/* Footer Section */}
       <footer className="bg-[#f9faf9] text-center py-6 mt-8 text-sm">
@@ -92,20 +80,6 @@ export default function LandingPage() {
         </div>
         <p className="text-[#12150f]">© 2024 NoteSage. All rights reserved.</p>
       </footer>
-    </div>
-  );
-}
-
-function FeatureItem({ title, description, highlight }) {
-  return (
-    <div className="text-center flex flex-col items-center w-full md:max-w-xl">
-      <div className="w-24 h-24 mb-6 bg-gray-200 rounded-full flex items-center justify-center">
-        <span className="text-4xl text-gray-400">📷</span>
-      </div>
-      <h2 className="text-3xl md:text-4xl font-bold mt-2">
-        {title} {highlight && <span className="text-[#61cc03]">{highlight}</span>}
-      </h2>
-      <p className="mt-4 text-lg md:text-xl max-w-lg">{description}</p>
     </div>
   );
 }

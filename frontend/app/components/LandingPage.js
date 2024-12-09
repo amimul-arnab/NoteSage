@@ -2,7 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import FeatureItem from "./FeatureItem";
-import LogoLight from "../assets/logo/NoteSageLogo_Light.png"; // Adjust the path if necessary
+import LogoLight from "../assets/logo/NoteSageLogo_Light.png";
+import Neurodivergent from "../assets/neurodivergent.png";
 
 export default function LandingPage() {
   return (
@@ -10,13 +11,15 @@ export default function LandingPage() {
       {/* Top Banner Section */}
       <section className="flex flex-col md:flex-row items-center p-8 md:p-16 bg-[#f4f4f4] md:h-[500px]">
         <div className="flex-1 flex justify-center">
-          <Image
-            src={LogoLight}
-            alt="NoteSage Logo"
-            width={600}
-            height={400}
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image
+              src={LogoLight}
+              alt="NoteSage Logo"
+              width={600}
+              height={400}
+              className="object-contain"
+            />
+          </Link>
         </div>
         <div className="flex-1 text-center md:text-left md:pl-10 mt-8 md:mt-0">
           <h1 className="text-5xl md:text-7xl font-bold leading-tight">
@@ -34,7 +37,7 @@ export default function LandingPage() {
       {/* Features Section */}
       <section className="flex flex-col items-center gap-16 p-8 md:p-12">
         <FeatureItem
-          title="Study Guide Generated"
+          title="Study Guide Generation"
           description="Simply upload your notes and create a customized study guide just for you, saving you time from creating your own."
         />
 
@@ -69,7 +72,15 @@ export default function LandingPage() {
         </div>
         <div className="md:w-1/2 flex justify-center md:justify-end mt-8 md:mt-0">
           <div className="w-48 h-48 bg-white rounded-full flex items-center justify-center">
-            <span className="text-7xl text-gray-400">📷</span>
+            <span className="text-7xl text-gray-400">
+              <Image
+              src={Neurodivergent}
+              alt="NoteSage Logo"
+              width={400}
+              height={500}
+              className="object-contain"
+              />
+            </span>
           </div>
         </div>
       </section>
