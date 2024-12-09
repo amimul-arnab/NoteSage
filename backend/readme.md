@@ -50,12 +50,17 @@ python -m dotenv .env run flask run
 ```
 The application should now be running locally on `http://127.0.0.1:5000/`.
 
-### 5. Testing the Application
+### 5. Run the Frontend
 
-You can use the provided HTML file to test all the features of the NoteSage API.
-
-- Open the `index.html` file in a browser.
-- Use the interface to interact with the backend, including signing up, logging in, uploading notes, and generating summaries.
+- Navigatine to the /frontend/ folder
+- To install dependencies run:
+```
+npm install
+```
+- To run the frontend and view the application in development mode run:
+```
+npm run dev
+```
 
 ## Notes
 - Make sure the virtual environment is activated whenever running the server or installing new dependencies.

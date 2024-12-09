@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import LogoLight from "../assets/logo/NoteSageLogo_Light.png";
+import CCNY from "../assets/ccny.png";
 
 export default function LandingPage() {
   return (
@@ -8,13 +9,15 @@ export default function LandingPage() {
       {/* Top Banner Section */}
       <section className="flex flex-col md:flex-row items-center p-8 md:p-16 bg-[#f4f4f4] md:h-[500px]">
         <div className="flex-1 flex justify-center">
-          <Image
-            src={LogoLight}
-            alt="NoteSage Logo"
-            width={600}
-            height={400}
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image
+              src={LogoLight}
+              alt="NoteSage Logo"
+              width={600}
+              height={400}
+              className="object-contain"
+            />
+          </Link>
         </div>
         <div className="flex-1 text-center md:text-left md:pl-10 mt-8 md:mt-0">
           <h1 className="text-5xl md:text-7xl font-bold leading-tight">
@@ -26,6 +29,33 @@ export default function LandingPage() {
               Let's Begin!
             </button>
           </Link>
+        </div>
+      </section>
+
+      {/* About Us Banner */}
+      <section className="flex flex-col md:flex-row items-center justify-between p-8 md:p-16 text-white bg-gradient-to-r from-[#0097b2] to-[#7ed957]">
+        <div className="md:w-1/2 text-center md:text-left flex flex-col justify-center">
+          <h2 className="text-4xl md:text-6xl font-bold mb-4">
+            About Us
+          </h2>
+          <p className="text-xl md:text-2xl">
+            NoteSage was developed by a team of Computer Science students at City College of New York with a passion for 
+            streamlining and easing the learning process. Contributors include Sohail Ahmad, Amimul Arnab, Ian Frost, Sefat 
+            Monzor, and Anova Sarkar.
+          </p>
+        </div>
+        <div className="md:w-1/2 flex justify-center md:justify-end mt-8 md:mt-0">
+          <div className="w-48 h-48 bg-white rounded-full flex items-center justify-center">
+            <span className="text-7xl text-gray-400">
+            <Image
+              src={CCNY}
+              alt="NoteSage Logo"
+              width={400}
+              height={400}
+              className="object-contain"
+            />
+            </span>
+          </div>
         </div>
       </section>
 
@@ -49,20 +79,6 @@ export default function LandingPage() {
         </div>
         <p className="text-[#12150f]">© 2024 NoteSage. All rights reserved.</p>
       </footer>
-    </div>
-  );
-}
-
-function FeatureItem({ title, description, highlight }) {
-  return (
-    <div className="text-center flex flex-col items-center w-full md:max-w-xl">
-      <div className="w-24 h-24 mb-6 bg-gray-200 rounded-full flex items-center justify-center">
-        <span className="text-4xl text-gray-400">📷</span>
-      </div>
-      <h2 className="text-3xl md:text-4xl font-bold mt-2">
-        {title} {highlight && <span className="text-[#61cc03]">{highlight}</span>}
-      </h2>
-      <p className="mt-4 text-lg md:text-xl max-w-lg">{description}</p>
     </div>
   );
 }

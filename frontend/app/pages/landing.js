@@ -8,13 +8,15 @@ export default function LandingPage() {
       {/* Top Banner Section */}
       <section className="flex flex-col md:flex-row items-center p-8 md:p-16 bg-[#f4f4f4] md:h-[500px]">
         <div className="flex-1 flex justify-center">
-          <Image
-            src={LogoLight}
-            alt="NoteSage Logo"
-            width={600}
-            height={400}
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image
+              src={LogoLight}
+              alt="NoteSage Logo"
+              width={600}
+              height={400}
+              className="object-contain"
+            />
+          </Link>
         </div>
         <div className="flex-1 text-center md:text-left md:pl-10 mt-8 md:mt-0">
           <h1 className="text-5xl md:text-7xl font-bold leading-tight">
