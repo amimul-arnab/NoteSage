@@ -1,17 +1,17 @@
 import { useRouter } from 'next/navigation';
 import { MdOutlineEdit } from 'react-icons/md';
 
-const DeckCard = ({ id, title, description }) => {
+const DeckCard = ({ _id, title, description }) => {
   const router = useRouter();
 
   const handleEdit = (e) => {
     e.stopPropagation();
-    router.push(`/flashcards/edit/${id}`);
+    router.push(`/flashcards/edit/${_id}`);
   };
 
   return (
     <div 
-      onClick={() => router.push(`/flashcards/view/${id}`)}
+      onClick={() => router.push(`/flashcards/view/${_id}`)}
       className="cursor-pointer bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 relative"
     >
       <button

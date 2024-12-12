@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,12 +10,28 @@ export default function FlashcardsPage() {
   const [isNavOpen, setIsNavOpen] = useState(true);
   const router = useRouter();
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
   useEffect(() => {
-    const savedDecks = localStorage.getItem('flashcards-decks');
-    if (savedDecks) {
-      setDecks(JSON.parse(savedDecks));
+    if (!token) {
+      router.push('/login');
+      return;
     }
-  }, []);
+
+    // Fetch decks from the backend
+    fetch('http://localhost:5000/flashcards/decks', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.decks) {
+        setDecks(data.decks);
+      } else if (data.error) {
+        console.error(data.error);
+      }
+    })
+    .catch(err => console.error('Error fetching decks:', err));
+  }, [token, router]);
 
   return (
     <>
@@ -25,7 +41,6 @@ export default function FlashcardsPage() {
         onToggle={(state) => setIsNavOpen(state)}
       />
       
-      {/* Main content that starts exactly at navbar edge */}
       <main 
         className={`transition-all duration-300 ease-in-out ${
           isNavOpen ? 'ml-64' : 'ml-20'

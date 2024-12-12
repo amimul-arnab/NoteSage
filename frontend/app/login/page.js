@@ -5,6 +5,7 @@ import GoogleButton from "react-google-button";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoLight from "../assets/logo/NoteSageLogo_Light.png";
+import { motion } from "motion/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -95,13 +96,11 @@ export default function LoginPage() {
           {errorMessage && (
             <div className="text-red-500 text-center text-sm">{errorMessage}</div>
           )}
-          <div className="mt-6 w-full">
+          <div className="mt-8">
             <button
               type="submit"
               className={`w-full p-4 font-semibold rounded-full text-white ${
-                isLoading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-500 hover:bg-green-600"
+                isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#61cc03]"
               }`}
               style={{ width: "250px", margin: "0 auto", display: "block" }}
               disabled={isLoading}

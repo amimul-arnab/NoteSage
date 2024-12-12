@@ -9,18 +9,20 @@ class User:
         self.created_at = datetime.utcnow()
 
 class Note:
-    def __init__(self, user_id, filename, s3_url, subject_id=None):
+    def __init__(self, user_id, filename, s3_url, subject_id=None, content_type=None):
         self.user_id = user_id
         self.filename = filename
         self.s3_url = s3_url
         self.subject_id = subject_id  # Reference to the Subject
         self.created_at = datetime.utcnow()
         self.status = 'pending'
+        self.content_type = content_type  # Added field for MIME type of the uploaded file
 
 class GeneratedNote:
-    def __init__(self, user_id, original_note_id, content):
+    def __init__(self, user_id, original_note_id, content, subject_id=None):
         self.user_id = user_id
         self.original_note_id = original_note_id
+        self.subject_id = subject_id  # Direct reference to subject
         self.content = content
         self.created_at = datetime.utcnow()
 
@@ -29,3 +31,21 @@ class Subject:
         self.user_id = user_id
         self.subject_name = subject_name
         self.created_at = datetime.utcnow()
+
+class FlashcardCard:
+    def __init__(self, term, definition, image=None):
+        self.term = term
+        self.definition = definition
+        self.image = image  # Either None or a URL to S3
+        # No timestamps here as cards are embedded documents within decks
+
+class FlashcardDeck:
+    def __init__(self, user_id, title, description, underglowColor="", cards=None):
+        self.user_id = user_id
+        self.title = title
+        self.description = description
+        self.underglowColor = underglowColor
+        self.cards = cards if cards is not None else []
+        self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+

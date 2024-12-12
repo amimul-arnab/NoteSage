@@ -68,8 +68,11 @@ const FlashcardWizard = ({ existingDeck = null, onSave, onDelete, onClose }) => 
     // Convert to base64
     const reader = new FileReader();
     reader.onload = (e) => {
-      handleCardChange(cardId, 'image', e.target.result);
-    };
+      const result = e.target.result; // data:image/png;base64,iVBOR...
+      // Strip prefix:
+      const base64Str = result.split(",")[1];
+      handleCardChange(cardId, 'image', base64Str);
+    };    
     reader.readAsDataURL(file);
   };
 
