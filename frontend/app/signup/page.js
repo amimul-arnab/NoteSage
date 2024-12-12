@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoLight from "../assets/logo/NoteSageLogo_Light.png";
+import { motion } from "motion/react"
 
 export default function SignupPage() {
   const router = useRouter();
@@ -61,13 +62,15 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#f9faf9] text-[#12150f]">
       <div className="w-full max-w-lg p-12 space-y-6 bg-white rounded-3xl shadow-lg">
         <div className="flex justify-center mb-2">
-          <Image
-            src={LogoLight}
-            alt="NoteSage Logo"
-            width={150}
-            height={150}
-            className="object-contain"
-          />
+          <Link href="/">
+            <Image
+              src={LogoLight}
+              alt="NoteSage Logo"
+              width={150}
+              height={150}
+              className="object-contain"
+            />
+          </Link>
         </div>
         <h2
           className="text-center text-3xl font-bold"
@@ -104,16 +107,21 @@ export default function SignupPage() {
             <div className="text-red-500 text-center">{errorMessage}</div>
           )}
           <div className="mt-8">
-            <button
-              type="submit"
-              className={`w-full p-4 font-semibold rounded-full text-white ${
-                isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#61cc03]"
-              }`}
-              style={{ width: "250px", margin: "0 auto", display: "block" }}
-              disabled={isLoading}
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
             >
-              {isLoading ? "Signing up..." : "Sign Up"}
-            </button>
+              <button
+                type="submit"
+                className={`w-full p-4 font-semibold rounded-full text-white ${
+                  isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#61cc03]"
+                }`}
+                style={{ width: "250px", margin: "0 auto", display: "block" }}
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing up..." : "Sign Up"}
+              </button>
+            </motion.div>
           </div>
         </form>
         <div className="text-center mt-4">

@@ -5,6 +5,7 @@ import GoogleButton from "react-google-button";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoLight from "../assets/logo/NoteSageLogo_Light.png";
+import { motion } from "motion/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -96,16 +97,21 @@ export default function LoginPage() {
             <div className="text-red-500 text-center">{errorMessage}</div>
           )}
           <div className="mt-8">
-            <button
-              type="submit"
-              className={`w-full p-4 font-semibold rounded-full text-white ${
-                isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#61cc03]"
-              }`}
-              style={{ width: "250px", margin: "0 auto", display: "block" }}
-              disabled={isLoading}
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </button>
+              <button
+                type="submit"
+                className={`w-full p-4 font-semibold rounded-full text-white ${
+                  isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#61cc03]"
+                }`}
+                style={{ width: "250px", margin: "0 auto", display: "block" }}
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing in..." : "Sign In"}
+              </button>
+            </motion.div>
           </div>
         </form>
         <div className="flex items-center my-6">
