@@ -11,3 +11,4 @@ class Config:
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
     ALLOWED_EXTENSIONS = {'pdf', 'txt', 'doc', 'docx', 'jpg', 'png','jpeg'}
     OPENAI_API_KEY = os.getenv('OPEN_AI_KEY')
+    AWS_REGION=os.getenv('AWS_REGION')

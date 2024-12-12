@@ -1,8 +1,12 @@
+# backend/utils/s3_manager.py
 import boto3
 from botocore.exceptions import ClientError
 from werkzeug.utils import secure_filename
 import logging
 from typing import BinaryIO, Optional
+from datetime import datetime
+import base64
+import mimetypes
 
 class S3Manager:
     def __init__(self, config):
@@ -26,6 +30,48 @@ class S3Manager:
             return f"https://{self.bucket}.s3.amazonaws.com/{key}"
         except ClientError as e:
             logging.error(f"S3 upload error: {e}")
+            raise
+    
+    def upload_base64(self, base64_str: str, user_id: str, filename: str = None) -> str:
+        """
+        Upload a base64-encoded image string to S3.
+        If no filename is provided, generate one based on the current timestamp.
+
+        :param base64_str: Base64 image data (no data URI prefix)
+        :param user_id: ID of the user uploading the file
+        :param filename: (Optional) Filename to use for the uploaded file
+        :return: Public URL of the uploaded image
+        """
+        try:
+            file_data = base64.b64decode(base64_str)
+            # If no filename is given, create one
+            if not filename:
+                filename = f"image_{datetime.utcnow().timestamp()}.png"
+            else:
+                filename = secure_filename(filename)
+
+            # Attempt to guess content type
+            content_type, _ = mimetypes.guess_type(filename)
+            if not content_type:
+                # Default to PNG if unknown
+                content_type = 'image/png'
+
+            key = f"users/{user_id}/flashcards/{datetime.utcnow().isoformat()}_{filename}"
+
+            self.s3.put_object(
+                Bucket=self.bucket,
+                Key=key,
+                Body=file_data,
+                ContentType=content_type,
+                ACL='public-read'  # Adjust as necessary if you don't want public access
+            )
+
+            return f"https://{self.bucket}.s3.amazonaws.com/{key}"
+        except ClientError as e:
+            logging.error(f"S3 base64 upload error: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Unexpected error in base64 upload: {e}", exc_info=True)
             raise
 
     def get_file(self, key: str) -> Optional[bytes]:
