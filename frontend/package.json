@@ -35,6 +35,7 @@
     "@tiptap/starter-kit": "^2.9.1",
     "concurrently": "^9.0.1",
     "katex": "^0.16.11",
+    "lucide-react": "^0.468.0",
     "next": "14.2.14",
     "parchment": "^3.0.0",
     "react": "18.2.0",
