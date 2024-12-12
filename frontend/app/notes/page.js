@@ -1,4 +1,3 @@
-// /Users/amimularnab/notesage/frontend/app/notes/page.js
 "use client";
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';

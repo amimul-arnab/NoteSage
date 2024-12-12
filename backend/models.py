@@ -31,3 +31,21 @@ class Subject:
         self.user_id = user_id
         self.subject_name = subject_name
         self.created_at = datetime.utcnow()
+
+class FlashcardCard:
+    def __init__(self, term, definition, image=None):
+        self.term = term
+        self.definition = definition
+        self.image = image  # Either None or a URL to S3
+        # No timestamps here as cards are embedded documents within decks
+
+class FlashcardDeck:
+    def __init__(self, user_id, title, description, underglowColor="", cards=None):
+        self.user_id = user_id
+        self.title = title
+        self.description = description
+        self.underglowColor = underglowColor
+        self.cards = cards if cards is not None else []
+        self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+
