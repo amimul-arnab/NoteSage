@@ -11,6 +11,7 @@ import SettingsIcon from '../assets/profile.png';
 import LogoLight from '../assets/logo/NoteSageLogo_Light.png';
 import LogoutIcon from '../assets/logout.png';
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react"
 
 export default function Navbar({ activePage, onToggle, isOpen }) {
   const toggleNavbar = () => {
@@ -83,44 +84,74 @@ export default function Navbar({ activePage, onToggle, isOpen }) {
           <div className="w-8 h-0.5 bg-white"></div>
         </button>
 
-        <Link href="/main" className={`flex items-center px-6 py-3 text-white ${activePage === 'home' && 'bg-[#a1e194]'}`}>
-          <Image src={HomeIcon} alt="Home" width={30} height={30} className="invert" />
-          {isOpen && <span className="ml-4 text-lg font-bold">Home</span>}
-        </Link>
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Link href="/main" className={`flex items-center px-6 py-3 text-white ${activePage === 'home' && 'bg-[#a1e194]'}`}>
+            <Image src={HomeIcon} alt="Home" width={30} height={30} className="invert" />
+            {isOpen && <span className="ml-4 text-lg font-bold">Home</span>}
+          </Link>
+        </motion.div>
+        
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Link href="/notes" className={`flex items-center px-6 py-3 text-white ${activePage === 'notes' && 'bg-[#a1e194]'}`}>
+            <Image src={NotesIcon} alt="Notes" width={30} height={30} className="invert" />
+            {isOpen && <span className="ml-4 text-lg font-bold">Notes</span>}
+          </Link>
+        </motion.div>
 
-        <Link href="/notes" className={`flex items-center px-6 py-3 text-white ${activePage === 'notes' && 'bg-[#a1e194]'}`}>
-          <Image src={NotesIcon} alt="Notes" width={30} height={30} className="invert" />
-          {isOpen && <span className="ml-4 text-lg font-bold">Notes</span>}
-        </Link>
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Link href="/flashcards" className={`flex items-center px-6 py-3 text-white ${activePage === 'flashcards' && 'bg-[#a1e194]'}`}>
+            <Image src={FlashcardIcon} alt="Flashcards" width={30} height={30} className="invert" />
+            {isOpen && <span className="ml-4 text-lg font-bold">Flashcards</span>}
+          </Link>
+        </motion.div>
 
-        <Link href="/flashcards" className={`flex items-center px-6 py-3 text-white ${activePage === 'flashcards' && 'bg-[#a1e194]'}`}>
-          <Image src={FlashcardIcon} alt="Flashcards" width={30} height={30} className="invert" />
-          {isOpen && <span className="ml-4 text-lg font-bold">Flashcards</span>}
-        </Link>
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Link href="/test" className={`flex items-center px-6 py-3 text-white ${activePage === 'test' && 'bg-[#a1e194]'}`}>
+            <Image src={TestIcon} alt="Test" width={30} height={30} className="invert" />
+            {isOpen && <span className="ml-4 text-lg font-bold">Test</span>}
+          </Link>
+        </motion.div>
 
-        <Link href="/test" className={`flex items-center px-6 py-3 text-white ${activePage === 'test' && 'bg-[#a1e194]'}`}>
-          <Image src={TestIcon} alt="Test" width={30} height={30} className="invert" />
-          {isOpen && <span className="ml-4 text-lg font-bold">Test</span>}
-        </Link>
-
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
         <Link href="/settings" className={`flex items-center px-6 py-3 text-white ${activePage === 'settings' && 'bg-[#a1e194]'}`}>
           <Image src={SettingsIcon} alt="Settings" width={30} height={30} className="invert" />
           {isOpen && <span className="ml-4 text-lg font-bold">Settings</span>}
         </Link>
+        </motion.div>
 
-        <button
-          onClick={handleLogout}
-          className={`flex items-center px-6 py-3 text-white ${activePage === 'logout' && 'bg-[#a1e194]'}`}
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <Image
-            src={LogoutIcon} // Replace with a logout icon if available, otherwise reuse SettingsIcon
-            alt="Logout"
-            width={30}
-            height={30}
-            className="invert"
-          />
-          {isOpen && <span className="ml-4 text-lg font-bold">Logout</span>}
-        </button>
+          <button
+            onClick={handleLogout}
+            className={`flex items-center px-6 py-3 text-white ${activePage === 'logout' && 'bg-[#a1e194]'}`}
+          >
+            <Image
+              src={LogoutIcon} // Replace with a logout icon if available, otherwise reuse SettingsIcon
+              alt="Logout"
+              width={30}
+              height={30}
+              className="invert"
+            />
+            {isOpen && <span className="ml-4 text-lg font-bold">Logout</span>}
+          </button>
+        </motion.div>
       </nav>
 
       <style jsx>{`
