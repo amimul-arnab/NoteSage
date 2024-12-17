@@ -5,7 +5,8 @@ flask_bcrypt
 pymongo
 boto3
 python-dotenv
-openai==0.28.0 
+openai==0.28.0
 werkzeug
 click
 requests
+flask-socketio
