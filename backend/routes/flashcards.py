@@ -8,6 +8,7 @@ from config import Config
 from flask_cors import cross_origin
 import re
 import base64
+import secrets
 
 flashcards_bp = Blueprint('flashcards', __name__)
 
@@ -33,24 +34,38 @@ def is_base64_image(data_url: str) -> bool:
 
 def upload_card_images(cards, user_id):
     """
-    Iterate through the provided cards. If a card's image field is a base64 data URL,
-    upload it to S3 and replace the image field with the S3 URL.
+    Upload card images to S3 if they are base64 strings.
     """
     updated_cards = []
     for card in cards:
         updated_card = card.copy()
         if 'image' in updated_card and updated_card['image']:
-            image_data = updated_card['image']
-            if is_base64_image(image_data):
-                # Extract base64 portion
-                base64_str = image_data.split(';base64,')[-1]
-                # Determine a filename from card term or a timestamp
-                filename = f"flashcard_{datetime.utcnow().timestamp()}.png"
-                s3_url = s3_manager.upload_base64(base64_str, user_id, filename)
-                updated_card['image'] = s3_url
-            # else: if it's already a URL, we leave it as is.
+            try:
+                # Check if it's already an S3 URL
+                if updated_card['image'].startswith('https://'):
+                    updated_cards.append(updated_card)
+                    continue
+
+                # Generate a unique filename
+                filename = f"flashcard_{datetime.utcnow().timestamp()}_{secrets.token_hex(8)}.jpg"
+                
+                try:
+                    # Upload to S3 and get URL
+                    s3_url = s3_manager.upload_base64(
+                        updated_card['image'],
+                        user_id,
+                        filename
+                    )
+                    updated_card['image'] = s3_url
+                except Exception as e:
+                    logging.error(f"Failed to upload image to S3: {e}")
+                    updated_card['image'] = None
+            except Exception as e:
+                logging.error(f"Error processing card image: {e}")
+                updated_card['image'] = None
         updated_cards.append(updated_card)
     return updated_cards
+
 
 @flashcards_bp.route('/decks', methods=['POST'])
 @jwt_required()
@@ -126,6 +141,10 @@ def update_deck(deck_id):
         user_id = get_jwt_identity()
         data = request.get_json()
 
+        # Validate request size
+        if request.content_length and request.content_length > 10 * 1024 * 1024:  # 10MB limit
+            return jsonify({"error": "Request too large"}), 413
+
         # Fetch existing deck
         deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
         if not deck:
@@ -145,14 +164,23 @@ def update_deck(deck_id):
 
         update_fields["updated_at"] = datetime.utcnow()
 
-        flashcards_collection.update_one({"_id": ObjectId(deck_id)}, {"$set": update_fields})
+        # Use transactions for atomic updates
+        with client.start_session() as session:
+            with session.start_transaction():
+                flashcards_collection.update_one(
+                    {"_id": ObjectId(deck_id)},
+                    {"$set": update_fields},
+                    session=session
+                )
 
+        # Fetch and return updated deck
         updated_deck = flashcards_collection.find_one({"_id": ObjectId(deck_id)})
         updated_deck["_id"] = str(updated_deck["_id"])
         return jsonify(updated_deck), 200
+
     except Exception as e:
         logging.error(f"Error updating deck: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": str(e)}), 500
 
 @flashcards_bp.route('/decks/<deck_id>', methods=['DELETE'])
 @jwt_required()

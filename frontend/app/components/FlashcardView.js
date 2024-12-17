@@ -10,6 +10,10 @@ const FlashcardView = ({ cards = [], title, description, underglowColor }) => {
   const currentCard = cards[currentIndex];
   
   useEffect(() => {
+    console.log('Current card:', currentCard);
+    if (currentCard?.image) {
+      console.log('Image URL:', currentCard.image);
+    }
     const handleKeyPress = (e) => {
       if (e.key === 'ArrowLeft') handlePrevious();
       if (e.key === 'ArrowRight') handleNext();
@@ -21,7 +25,7 @@ const FlashcardView = ({ cards = [], title, description, underglowColor }) => {
     
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentIndex]);
+  }, [currentIndex, currentCard]);
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -74,14 +78,28 @@ const FlashcardView = ({ cards = [], title, description, underglowColor }) => {
                   {currentCard.term}
                 </div>
                 {currentCard.image && (
-                  <div className="mt-4">
+                  <div className="mt-4 relative">
                     <img
                       src={currentCard.image}
-                      alt="Card visual"
+                      alt={`Visual for ${currentCard.term}`}
                       className="max-w-full max-h-48 object-contain rounded-lg"
+                      onError={(e) => {
+                        console.error('Image load error for:', currentCard.image);
+                        e.target.onerror = null; // Prevent infinite loop
+                        e.target.style.display = 'none';
+                        const parent = e.target.parentElement;
+                        if (parent) {
+                          const errorText = document.createElement('div');
+                          errorText.className = 'text-red-500 text-sm';
+                          errorText.textContent = 'Failed to load image';
+                          parent.appendChild(errorText);
+                        }
+                      }}
+                      onLoad={() => console.log('Image loaded successfully:', currentCard.image)}
                     />
                   </div>
                 )}
+                {currentCard.image && <div className="text-xs text-gray-500 mt-2">Click to flip</div>}
               </div>
             ) : (
               // Definition Side

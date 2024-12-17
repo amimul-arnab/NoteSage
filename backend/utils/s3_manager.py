@@ -29,7 +29,9 @@ class S3Manager:
             )
             return f"https://{self.bucket}.s3.amazonaws.com/{key}"
         except ClientError as e:
-            logging.error(f"S3 upload error: {e}")
+            logging.error(f"S3 upload error: {str(e)}")
+            logging.error(f"Error Code: {e.response['Error']['Code']}")
+            logging.error(f"Error Message: {e.response['Error']['Message']}")
             raise
     
     def upload_base64(self, base64_str: str, user_id: str, filename: str = None) -> str:
@@ -62,13 +64,14 @@ class S3Manager:
                 Bucket=self.bucket,
                 Key=key,
                 Body=file_data,
-                ContentType=content_type,
-                ACL='public-read'  # Adjust as necessary if you don't want public access
+                ContentType=content_type
             )
 
             return f"https://{self.bucket}.s3.amazonaws.com/{key}"
         except ClientError as e:
-            logging.error(f"S3 base64 upload error: {e}")
+            logging.error(f"S3 base64 upload error: {str(e)}")
+            logging.error(f"Error Code: {e.response['Error']['Code']}")
+            logging.error(f"Error Message: {e.response['Error']['Message']}")
             raise
         except Exception as e:
             logging.error(f"Unexpected error in base64 upload: {e}", exc_info=True)
@@ -79,7 +82,9 @@ class S3Manager:
             response = self.s3.get_object(Bucket=self.bucket, Key=key)
             return response['Body'].read()
         except ClientError as e:
-            logging.error(f"S3 download error: {e}")
+            logging.error(f"S3 download error: {str(e)}")
+            logging.error(f"Error Code: {e.response['Error']['Code']}")
+            logging.error(f"Error Message: {e.response['Error']['Message']}")
             raise
 
     def delete_file(self, key: str) -> bool:
@@ -87,7 +92,9 @@ class S3Manager:
             self.s3.delete_object(Bucket=self.bucket, Key=key)
             return True
         except ClientError as e:
-            logging.error(f"S3 deletion error: {e}")
+            logging.error(f"S3 deletion error: {str(e)}")
+            logging.error(f"Error Code: {e.response['Error']['Code']}")
+            logging.error(f"Error Message: {e.response['Error']['Message']}")
             raise
 
     def generate_presigned_url(self, key: str, expiration=3600) -> Optional[str]:
@@ -108,7 +115,9 @@ class S3Manager:
             )
             return url
         except ClientError as e:
-            logging.error(f"S3 pre-signed URL generation error: {e}")
+            logging.error(f"S3 pre-signed URL generation error: {str(e)}")
+            logging.error(f"Error Code: {e.response['Error']['Code']}")
+            logging.error(f"Error Message: {e.response['Error']['Message']}")
             return None
 
 # Create a default instance

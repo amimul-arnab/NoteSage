@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 
 const FlashcardWizard = ({ existingDeck = null, onSave, onDelete, onClose }) => {
+  const [isChanged, setIsChanged] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [deck, setDeck] = useState({
     title: '',
     description: '',
@@ -53,47 +55,136 @@ const FlashcardWizard = ({ existingDeck = null, onSave, onDelete, onClose }) => 
         card.id === cardId ? { ...card, [field]: value } : card
       )
     }));
+    setIsChanged(true);
+  };
+
+  const MAX_IMAGE_SIZE = 800; // Maximum width/height in pixels
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
+  
+  const compressImage = (file, maxSize) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+  
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > height) {
+            if (width > maxSize) {
+              height = Math.round((height * maxSize) / width);
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = Math.round((width * maxSize) / height);
+              height = maxSize;
+            }
+          }
+  
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+  
+          // Convert to base64 with compression
+          const base64String = canvas.toDataURL(file.type, 0.7); // Use original file type with 70% quality
+          resolve(base64String);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+    });
   };
 
   const handleImageUpload = async (cardId, file) => {
-    if (!file) return;
-    
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please upload a valid image file (JPEG, PNG, or GIF)');
-      return;
+    try {
+      if (!file) return;
+  
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload a valid image file (JPEG, PNG, or GIF)');
+        return;
+      }
+  
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+  
+      // Compress image and get base64 string
+      const compressedBase64 = await compressImage(file, MAX_IMAGE_SIZE);
+      
+      // Extract the base64 data part
+      const base64Trimmed = compressedBase64.split(',')[1];
+      
+      // Update the card with the compressed image
+      handleCardChange(cardId, 'image', `data:${file.type};base64,${base64Trimmed}`);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Error processing image. Please try again with a different image.');
     }
-
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target.result; // data:image/png;base64,iVBOR...
-      // Strip prefix:
-      const base64Str = result.split(",")[1];
-      handleCardChange(cardId, 'image', base64Str);
-    };    
-    reader.readAsDataURL(file);
   };
-
-  const handleSave = () => {
-    // Validate required fields
+  
+  const [saveStatus, setSaveStatus] = useState('Save Deck'); // Add this state at the top
+  const handleSave = async () => {
     if (!deck.title.trim() || !deck.description.trim()) {
-      alert('Title and description are required');
+      setSaveStatus('Missing title or description');
+      setTimeout(() => setSaveStatus('Save Deck'), 3000);
       return;
     }
-
-    // Validate cards
-    const invalidCards = deck.cards.filter(
-      card => !card.term.trim() || !card.definition.trim()
-    );
-    
-    if (invalidCards.length > 0) {
-      alert('All cards must have both term and definition filled out');
-      return;
+  
+    setSaveStatus('Saving...');
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setSaveStatus('Not logged in');
+        setTimeout(() => setSaveStatus('Save Deck'), 3000);
+        return;
+      }
+  
+      const method = existingDeck ? 'PUT' : 'POST';
+      const url = existingDeck
+        ? `http://localhost:5000/flashcards/decks/${existingDeck._id}`
+        : 'http://localhost:5000/flashcards/decks';
+  
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(deck),
+      });
+  
+      // Log the request details for debugging
+      console.log('Request URL:', url);
+      console.log('Request Method:', method);
+      console.log('Request Body:', JSON.stringify(deck));
+  
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || `HTTP error! status: ${response.status}`);
+      }
+  
+      console.log('Response:', responseData); // Log the response
+      setSaveStatus('Changes saved');
+      setTimeout(() => {
+        onClose(); // Only close after successful save
+      }, 1000);
+  
+    } catch (error) {
+      console.error('Detailed save error:', error);
+      setSaveStatus(`Error: ${error.message}`);
+      setTimeout(() => setSaveStatus('Save Deck'), 3000);
     }
-
-    onSave(deck);
   };
 
   return (
@@ -224,11 +315,12 @@ const FlashcardWizard = ({ existingDeck = null, onSave, onDelete, onClose }) => 
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-4">
-          <button
+        <button
             onClick={handleSave}
+            disabled={isSaving}
             className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600"
           >
-            Save Deck
+            {isSaving ? 'Saving...' : 'Save Deck'}
           </button>
           {existingDeck && (
             <button
