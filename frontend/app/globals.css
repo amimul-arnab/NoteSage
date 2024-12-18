@@ -2,7 +2,8 @@
 
 body {
   font-family: 'Poppins', sans-serif;
-  background-color: #f9faf9
+  background-color: #f9faf9;
+  overflow-x: hidden;
 }
 
 @tailwind base;
@@ -33,7 +34,41 @@ body {
   margin-bottom: 1rem;
 }
 
-/* Media Queries for Responsiveness */
+.responsive-container {
+  width: 100%;
+  padding: 1rem;
+  margin: 0 auto;
+}
+
+/* Enhanced responsive containers */
+.responsive-container {
+  width: 100%;
+  padding: 1rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .responsive-container {
+    padding: 1.5rem;
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-container {
+    padding: 2rem;
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-container {
+    padding: 2.5rem;
+    max-width: 1024px;
+  }
+}
+
+/* Enhanced Media Queries */
 @media (max-width: 1024px) {
   .text-6xl {
     font-size: 2rem;
@@ -43,6 +78,9 @@ body {
   }
   .p-10 {
     padding: 2rem;
+  }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -60,6 +98,13 @@ body {
   .h-screen {
     height: auto;
   }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .modal-content {
+    width: 90%;
+    margin: 1rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -74,6 +119,78 @@ body {
   }
   .flex {
     flex-direction: column;
+  }
+  .gap-4 {
+    gap: 1rem;
+  }
+}
+
+/* Mobile Navigation */
+.mobile-nav {
+  width: 100% !important;
+  height: auto !important;
+}
+
+.mobile-nav .flex-col {
+  flex-direction: row;
+}
+
+.mobile-nav .space-y-2 {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem;
+  overflow-x: auto;
+}
+
+.mobile-nav .ml-4 {
+  display: none;
+}
+
+.mobile-nav + .main-content {
+  margin-top: 4rem;
+}
+
+@media (max-width: 768px) {
+  .mobile-nav .px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .mobile-nav .py-3 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-nav .px-6 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .mobile-nav .space-y-2 {
+    gap: 0.25rem;
+  }
+}
+
+/* Touch-friendly adjustments */
+@media (max-width: 640px) {
+  button, 
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+  
+  .toolbar-container {
+    padding: 12px;
+  }
+  
+  .toolbar-button {
+    padding: 8px;
+    margin: 4px;
   }
 }
 

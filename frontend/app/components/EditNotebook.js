@@ -1,4 +1,3 @@
-// /app/components/EditNotebook.js
 "use client";
 import { useState } from 'react';
 
@@ -27,6 +26,12 @@ export default function EditNotebook({ notebook, onSaveChanges, onDelete, onClos
       image,
     };
     onSaveChanges(updatedNotebook); // Save the updated notebook
+    onClose(); // Close modal after save
+  };
+
+  const handleDelete = () => {
+    onDelete(notebook.id); // Trigger delete
+    onClose(); // Close modal after delete
   };
 
   return (
@@ -75,7 +80,7 @@ export default function EditNotebook({ notebook, onSaveChanges, onDelete, onClos
 
         <button 
           className="bg-red-500 text-white py-2 px-4 rounded w-full" 
-          onClick={() => onDelete(notebook.id)}
+          onClick={handleDelete}
         >
           Delete Notebook
         </button>
