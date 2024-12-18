@@ -48,4 +48,5 @@ class FlashcardDeck:
         self.cards = cards if cards is not None else []
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
+        self.progress = {"learned": [],"mastered": [], "unfamiliar": []}
 

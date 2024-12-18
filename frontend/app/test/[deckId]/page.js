@@ -17,6 +17,8 @@ const QUESTION_TYPES = {
 
 const DynamicTestPage = () => {
   const params = useParams();
+  console.log("Params object:", params);
+  console.log("Deck ID:", params.deckId);
   const router = useRouter();
   const [deck, setDeck] = useState(null);
   const [currentCard, setCurrentCard] = useState(null);
@@ -60,41 +62,55 @@ const DynamicTestPage = () => {
 
   const calculateProgress = (cards) => {
     const totalCards = cards.length;
-    const learnedCount = cards.filter(c => c.learned && !c.mastered).length;
-    const masteredCount = cards.filter(c => c.mastered).length;
-    const unfamiliarCount = totalCards - learnedCount - masteredCount;
-
+    
+    // Count unique card IDs in each state
+    const learned = cards.filter(c => c.learned && !c.mastered).length;
+    const mastered = cards.filter(c => c.mastered).length;
+    const unfamiliar = totalCards - learned - mastered;
+  
     return {
-      learned: (learnedCount / totalCards) * 100,
-      mastered: (masteredCount / totalCards) * 100,
-      unfamiliar: (unfamiliarCount / totalCards) * 100,
+      learned: (learned / totalCards) * 100,
+      mastered: (mastered / totalCards) * 100,
+      unfamiliar: (unfamiliar / totalCards) * 100,
       counts: {
-        learned: learnedCount,
-        mastered: masteredCount,
-        unfamiliar: unfamiliarCount
+        learned,
+        mastered,
+        unfamiliar
       }
     };
   };
 
-  const saveProgress = (updatedDeck) => {
+  const saveProgress = async (updatedDeck) => {
     if (!updatedDeck) return;
-
+  
     try {
-      const decks = JSON.parse(localStorage.getItem('test-decks') || '[]');
-      const deckIndex = decks.findIndex(d => d.id === updatedDeck.id);
-      
-      const newProgress = calculateProgress(updatedDeck.cards);
-      updatedDeck.progress = newProgress.counts;
-      
-      decks[deckIndex] = updatedDeck;
-      localStorage.setItem('test-decks', JSON.stringify(decks));
-      
-      setProgress({
-        learned: newProgress.learned,
-        mastered: newProgress.mastered,
-        unfamiliar: newProgress.unfamiliar
+      // Calculate current card counts
+      const currentProgress = {
+        learned: updatedDeck.cards.filter(c => c.learned && !c.mastered).length,
+        mastered: updatedDeck.cards.filter(c => c.mastered).length,
+        unfamiliar: updatedDeck.cards.filter(c => !c.learned && !c.mastered).length
+      };
+  
+      // Backend save
+      const token = localStorage.getItem('access_token');
+      await fetch(`http://localhost:5000/flashcards/decks/${params.deckId}/progress`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          progress: currentProgress
+        })
       });
-      setDeck(updatedDeck);
+  
+      setProgress({
+        learned: (currentProgress.learned / updatedDeck.cards.length) * 100,
+        mastered: (currentProgress.mastered / updatedDeck.cards.length) * 100,
+        unfamiliar: (currentProgress.unfamiliar / updatedDeck.cards.length) * 100
+      });
+      setDeck({...updatedDeck, progress: currentProgress});
+  
     } catch (error) {
       console.error('Error saving progress:', error);
       setError('Failed to save progress');
@@ -127,20 +143,23 @@ const DynamicTestPage = () => {
 
   const handleAnswer = (isCorrect) => {
     if (!deck || !currentCard) return;
-
+  
     const updatedDeck = { ...deck };
     const cardIndex = updatedDeck.cards.findIndex(c => c.id === currentCard.id);
     const card = updatedDeck.cards[cardIndex];
-
+  
     if (isCorrect) {
+      // Reset wrong streak on correct answer
       card.wrongStreak = 0;
-
+      
       if (card.mastered) {
-        card.consecutiveCorrect = Math.min(card.consecutiveCorrect + 1, 2);
+        card.consecutiveCorrect = Math.min((card.consecutiveCorrect || 0) + 1, 2);
       } else if (card.learned) {
-        card.consecutiveCorrect++;
+        card.consecutiveCorrect = (card.consecutiveCorrect || 0) + 1;
         if (card.consecutiveCorrect >= 3) {
           card.mastered = true;
+          // Keep learned status when mastering
+          card.learned = true;
         }
       } else {
         card.learned = true;
@@ -149,16 +168,18 @@ const DynamicTestPage = () => {
     } else {
       card.consecutiveCorrect = 0;
       card.wrongStreak = (card.wrongStreak || 0) + 1;
-
+  
       if (card.wrongStreak >= 2) {
         if (card.mastered) {
           card.mastered = false;
+          // Demote to learned
+          card.learned = true;
         } else if (card.learned) {
           card.learned = false;
         }
       }
     }
-
+  
     saveProgress(updatedDeck);
     selectNextCard(updatedDeck);
   };
@@ -213,14 +234,17 @@ const DynamicTestPage = () => {
   const loadDeck = async () => {
     try {
       setLoading(true);
-      const decks = JSON.parse(localStorage.getItem('test-decks') || '[]');
-      const currentDeck = decks.find(d => d.id === params.deckId);
-      
-      if (!currentDeck) {
-        router.push('/test');
-        return;
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`http://localhost:5000/flashcards/decks/${params.deckId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to load deck');
       }
-
+  
+      const currentDeck = await response.json();
+  
       currentDeck.cards = currentDeck.cards.map(card => ({
         ...card,
         learned: card.learned || false,
@@ -228,17 +252,16 @@ const DynamicTestPage = () => {
         consecutiveCorrect: card.consecutiveCorrect || 0,
         wrongStreak: card.wrongStreak || 0
       }));
-
+  
       const newProgress = calculateProgress(currentDeck.cards);
       setProgress({
         learned: newProgress.learned,
         mastered: newProgress.mastered,
         unfamiliar: newProgress.unfamiliar
       });
-
+  
       setDeck(currentDeck);
       selectNextCard(currentDeck);
-      saveProgress(currentDeck);
     } catch (error) {
       console.error('Error loading deck:', error);
       setError('Failed to load deck');
@@ -246,6 +269,7 @@ const DynamicTestPage = () => {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     loadDeck();
@@ -265,7 +289,7 @@ const DynamicTestPage = () => {
         <div className="text-center">
           <p className="text-red-500 text-lg mb-4">{error}</p>
           <button
-            onClick={() => router.push('/test')}
+            onClick={() => router.push(`/test/${deckId}`)}
             className="text-blue-500 hover:underline"
           >
             Return to Test Page
@@ -310,12 +334,16 @@ const DynamicTestPage = () => {
         <QuestionWritten {...commonProps} />
       )}
   
-      <button
-        onClick={() => router.push('/test')}
-        className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors"
-      >
-        <X size={24} />
-      </button>
+        <button
+          onClick={() => {
+            if (deck) {
+              saveProgress(deck);
+            }
+            router.push('/test');
+          }}
+          className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors">
+          <X size={24} />
+        </button>
     </div>
   
     {/* Clear Progress Button */}

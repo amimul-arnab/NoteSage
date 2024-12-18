@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import TestUI from '../components/TestUI';
 
-// Lazy load the modal for better initial page load
 const ImportModal = lazy(() => import('../components/ImportModal'));
 
 export default function TestPage() {
@@ -14,15 +13,30 @@ export default function TestPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
-  // Load saved test decks on mount
-  useEffect(() => {
-    const savedDecks = localStorage.getItem('test-decks');
-    if (savedDecks) {
-      setImportedDecks(JSON.parse(savedDecks));
-    }
-  }, []);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
-  // Save decks whenever they change
+  // Fetch imported decks from the backend on mount
+  useEffect(() => {
+    const fetchDecks = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/flashcards/decks', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch decks');
+        const data = await response.json();
+        setImportedDecks(data.decks || []);
+      } catch (error) {
+        console.error('Error fetching imported decks:', error);
+      }
+    };
+
+    if (token) fetchDecks();
+  }, [token]);
+
+  // Save imported decks to localStorage when they change
   useEffect(() => {
     if (importedDecks.length > 0) {
       localStorage.setItem('test-decks', JSON.stringify(importedDecks));
@@ -30,29 +44,26 @@ export default function TestPage() {
   }, [importedDecks]);
 
   const handleImportDeck = (deck) => {
-    // Check if deck already exists
-    if (importedDecks.some(d => d.id === deck.id)) {
+    if (importedDecks.some((d) => d._id === deck._id)) {
       alert('This deck has already been imported.');
       return;
     }
 
-    // Validate deck has minimum 10 cards
     if (deck.cards.length < 10) {
       alert('Deck must have at least 10 cards to be imported.');
       return;
     }
 
-    // Add initial progress tracking
     const deckWithProgress = {
       ...deck,
       progress: {
         learned: 0,
         mastered: 0,
-        unfamiliar: deck.cards.length
-      }
+        unfamiliar: deck.cards.length,
+      },
     };
 
-    setImportedDecks(prev => [...prev, deckWithProgress]);
+    setImportedDecks((prev) => [...prev, deckWithProgress]);
     setIsModalOpen(false);
   };
 
@@ -63,10 +74,12 @@ export default function TestPage() {
         isOpen={isNavOpen}
         onToggle={(state) => setIsNavOpen(state)}
       />
-      
-      <main className={`transition-all duration-300 ease-in-out ${
-        isNavOpen ? 'ml-64' : 'ml-20'
-      }`}>
+
+      <main
+        className={`transition-all duration-300 ease-in-out ${
+          isNavOpen ? 'ml-64' : 'ml-20'
+        }`}
+      >
         <div className="p-6">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-4xl font-bold">Test Your Knowledge</h1>
@@ -88,15 +101,14 @@ export default function TestPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {importedDecks.map((deck) => (
                 <TestUI
-                  key={deck.id}
+                  key={deck._id}
                   deck={deck}
-                  onLearn={() => router.push(`/test/${deck.id}`)}
+                  onLearn={() => router.push(`/test/${deck._id}`)}
                 />
               ))}
             </div>
           )}
 
-          {/* Modal */}
           {isModalOpen && (
             <Suspense fallback={<div>Loading...</div>}>
               <ImportModal

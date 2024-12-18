@@ -10,6 +10,7 @@ import re
 import base64
 import secrets
 
+
 flashcards_bp = Blueprint('flashcards', __name__)
 
 # Initialize MongoDB
@@ -89,6 +90,11 @@ def create_deck():
             "description": data["description"].strip(),
             "underglowColor": data.get("underglowColor", ""),
             "cards": cards,
+            "progress": {
+                "learned": [],
+                "mastered": [],
+                "unfamiliar": list(range(len(cards)))
+            },
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
@@ -141,11 +147,9 @@ def update_deck(deck_id):
         user_id = get_jwt_identity()
         data = request.get_json()
 
-        # Validate request size
-        if request.content_length and request.content_length > 10 * 1024 * 1024:  # 10MB limit
+        if request.content_length and request.content_length > 10 * 1024 * 1024:
             return jsonify({"error": "Request too large"}), 413
 
-        # Fetch existing deck
         deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
         if not deck:
             return jsonify({"error": "Deck not found"}), 404
@@ -158,13 +162,17 @@ def update_deck(deck_id):
         if "underglowColor" in data:
             update_fields["underglowColor"] = data["underglowColor"]
         if "cards" in data:
-            # Upload images for cards if they are base64
             updated_cards = upload_card_images(data["cards"], user_id)
             update_fields["cards"] = updated_cards
+            # Initialize progress for new cards
+            update_fields["progress"] = {
+                "learned": [],
+                "mastered": [],
+                "unfamiliar": list(range(len(updated_cards)))
+            }
 
         update_fields["updated_at"] = datetime.utcnow()
 
-        # Use transactions for atomic updates
         with client.start_session() as session:
             with session.start_transaction():
                 flashcards_collection.update_one(
@@ -173,7 +181,6 @@ def update_deck(deck_id):
                     session=session
                 )
 
-        # Fetch and return updated deck
         updated_deck = flashcards_collection.find_one({"_id": ObjectId(deck_id)})
         updated_deck["_id"] = str(updated_deck["_id"])
         return jsonify(updated_deck), 200
@@ -181,6 +188,40 @@ def update_deck(deck_id):
     except Exception as e:
         logging.error(f"Error updating deck: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+    
+@flashcards_bp.route('/decks/<deck_id>/progress', methods=['PUT'])
+@jwt_required()
+@cross_origin()
+def update_deck_progress(deck_id):
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        # Validate progress data
+        if not isinstance(data.get('progress'), dict):
+            return jsonify({"error": "Invalid progress format"}), 400
+            
+        # Update only progress field
+        result = flashcards_collection.update_one(
+            {"_id": ObjectId(deck_id), "user_id": user_id},
+            {"$set": {
+                "progress": {
+                    "learned": data['progress'].get('learned', []),
+                    "mastered": data['progress'].get('mastered', []),
+                    "unfamiliar": data['progress'].get('unfamiliar', [])
+                },
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        if result.matched_count == 0:
+            return jsonify({"error": "Deck not found"}), 404
+            
+        return jsonify({"message": "Progress updated successfully"}), 200
+        
+    except Exception as e:
+        logging.error(f"Error updating deck progress: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
 
 @flashcards_bp.route('/decks/<deck_id>', methods=['DELETE'])
 @jwt_required()
