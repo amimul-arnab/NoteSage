@@ -149,8 +149,9 @@ const FlashcardWizard = ({ existingDeck = null, onSave, onDelete, onClose }) => 
         return;
       }
   
-      const method = existingDeck ? 'PUT' : 'POST';
-      const url = existingDeck
+      // Check if we have a valid existingDeck with _id
+      const method = existingDeck?._id ? 'PUT' : 'POST';
+      const url = existingDeck?._id 
         ? `http://localhost:5000/flashcards/decks/${existingDeck._id}`
         : 'http://localhost:5000/flashcards/decks';
   
@@ -160,13 +161,11 @@ const FlashcardWizard = ({ existingDeck = null, onSave, onDelete, onClose }) => 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(deck),
+        body: JSON.stringify({
+          ...deck,
+          _id: existingDeck?._id // Include _id if it exists
+        }),
       });
-  
-      // Log the request details for debugging
-      console.log('Request URL:', url);
-      console.log('Request Method:', method);
-      console.log('Request Body:', JSON.stringify(deck));
   
       const responseData = await response.json();
       
@@ -174,11 +173,8 @@ const FlashcardWizard = ({ existingDeck = null, onSave, onDelete, onClose }) => 
         throw new Error(responseData.error || `HTTP error! status: ${response.status}`);
       }
   
-      console.log('Response:', responseData); // Log the response
       setSaveStatus('Changes saved');
-      setTimeout(() => {
-        onClose(); // Only close after successful save
-      }, 1000);
+      setTimeout(() => onClose(), 1000);
   
     } catch (error) {
       console.error('Detailed save error:', error);
