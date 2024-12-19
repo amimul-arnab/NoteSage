@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import ProgressBar from './ProgressBar';
 
 const QuestionWritten = ({ 
   term, 
   correctAnswer, 
   onAnswer,
-  progress 
+  progress: { totalCards, learnedCount, masteredCount }
 }) => {
   const [input, setInput] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
@@ -124,14 +125,13 @@ const QuestionWritten = ({
         </button>
       </form>
 
-      <div className="mt-6">
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-[#61cc03] h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
+      <ProgressBar
+        totalCards={totalCards}
+        learnedCount={learnedCount}
+        masteredCount={masteredCount}
+        className="mt-6"
+        showLabels={false}
+      />
     </div>
   );
 };

@@ -7,27 +7,75 @@ import { X } from 'lucide-react';
 import QuestionMultipleChoice from '../../components/QuestionMultipleChoice';
 import QuestionTrueFalse from '../../components/QuestionTrueFalse';
 import QuestionWritten from '../../components/QuestionWritten';
+import ProgressBar from '../../components/ProgressBar';
+
+const SaveModal = ({ isOpen, onClose, status, error }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+        <div className="text-center">
+          {status === 'saving' && (
+            <div className="mb-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-2">Saving progress...</p>
+            </div>
+          )}
+          {status === 'success' && (
+            <div className="mb-4">
+              <div className="text-green-500 text-4xl mb-2">✓</div>
+              <p>Progress saved successfully!</p>
+            </div>
+          )}
+          {status === 'error' && (
+            <div className="mb-4">
+              <div className="text-red-500 text-4xl mb-2">⚠</div>
+              <p>Error saving progress</p>
+              <p className="text-sm text-red-500">{error}</p>
+            </div>
+          )}
+          <button
+            onClick={onClose}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            {status === 'error' ? 'Try Again' : 'Close'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 // Constants for question type probabilities
 const QUESTION_TYPES = {
   MULTIPLE_CHOICE: { type: 'multiple-choice', probability: 45 },
   TRUE_FALSE: { type: 'true-false', probability: 35 },
-  WRITTEN: { type: 'written', probability: 20 }
+  WRITTEN: { type: 'written', probability: 20 },
+};
+
+const STREAK_THRESHOLDS = {
+  MASTERY: 3,
+  LEARNED: 1,
+  DEMOTION: -2,
 };
 
 const DynamicTestPage = () => {
   const params = useParams();
-  console.log("Params object:", params);
-  console.log("Deck ID:", params.deckId);
   const router = useRouter();
   const [deck, setDeck] = useState(null);
   const [currentCard, setCurrentCard] = useState(null);
   const [questionType, setQuestionType] = useState(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
+  const [saveError, setSaveError] = useState('');
   const [progress, setProgress] = useState({ 
     learned: 0, 
     mastered: 0, 
     unfamiliar: 0 
   });
+  const [cardStates, setCardStates] = useState(new Map());
   const [distractors, setDistractors] = useState([]);
   const [isTermQuestion, setIsTermQuestion] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -62,8 +110,6 @@ const DynamicTestPage = () => {
 
   const calculateProgress = (cards) => {
     const totalCards = cards.length;
-    
-    // Count unique card IDs in each state
     const learned = cards.filter(c => c.learned && !c.mastered).length;
     const mastered = cards.filter(c => c.mastered).length;
     const unfamiliar = totalCards - learned - mastered;
@@ -80,42 +126,122 @@ const DynamicTestPage = () => {
     };
   };
 
+  const saveAllProgress = async () => {
+    try {
+      if (!deck) return { success: false, error: 'No deck data' };
+  
+      const states = Array.from(cardStates.entries());
+      const currentProgress = {
+        learned: states.filter(([_, state]) => state.status === 'learned').map(([index]) => index),
+        mastered: states.filter(([_, state]) => state.status === 'mastered').map(([index]) => index),
+        unfamiliar: states.filter(([_, state]) => state.status === 'unfamiliar').map(([index]) => index),
+      };
+  
+      console.log('Preparing to save progress:', currentProgress);
+  
+      const cardStatesObj = {};
+      cardStates.forEach((state, index) => {
+        cardStatesObj[index] = {
+          streak: state.streak,
+          status: state.status,
+          lastAnswered: state.lastAnswered,
+        };
+      });
+  
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(
+        `http://localhost:5000/flashcards/decks/${params.deckId}/progress`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            progress: currentProgress,
+            cardStates: cardStatesObj,
+          }),
+        }
+      );
+  
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Error saving progress:', error);
+        return { success: false, error: error.message || 'Failed to save progress' };
+      }
+  
+      console.log('Progress saved successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error in saveAllProgress:', error);
+      return { success: false, error: error.message };
+    }
+  };
+  
+  
+
   const saveProgress = async (updatedDeck) => {
     if (!updatedDeck) return;
   
     try {
-      // Calculate current card counts
+      const states = Array.from(cardStates.entries());
       const currentProgress = {
-        learned: updatedDeck.cards.filter(c => c.learned && !c.mastered).length,
-        mastered: updatedDeck.cards.filter(c => c.mastered).length,
-        unfamiliar: updatedDeck.cards.filter(c => !c.learned && !c.mastered).length
+        learned: states
+          .filter(([_, state]) => state.status === 'learned')
+          .map(([index]) => index),
+        mastered: states
+          .filter(([_, state]) => state.status === 'mastered')
+          .map(([index]) => index),
+        unfamiliar: states
+          .filter(([_, state]) => state.status === 'unfamiliar')
+          .map(([index]) => index),
       };
   
-      // Backend save
+      const cardStatesObj = {};
+      cardStates.forEach((state, index) => {
+        cardStatesObj[index] = {
+          streak: state.streak,
+          status: state.status,
+          lastAnswered: state.lastAnswered,
+        };
+      });
+  
       const token = localStorage.getItem('access_token');
-      await fetch(`http://localhost:5000/flashcards/decks/${params.deckId}/progress`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          progress: currentProgress
-        })
-      });
+      const response = await fetch(
+        `http://localhost:5000/flashcards/decks/${params.deckId}/progress`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            progress: currentProgress,
+            cardStates: cardStatesObj,
+          }),
+        }
+      );
   
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Failed to save progress:', error);
+        setError(error.message || 'Failed to save progress');
+        return;
+      }
+  
+      const totalCards = updatedDeck.cards.length;
       setProgress({
-        learned: (currentProgress.learned / updatedDeck.cards.length) * 100,
-        mastered: (currentProgress.mastered / updatedDeck.cards.length) * 100,
-        unfamiliar: (currentProgress.unfamiliar / updatedDeck.cards.length) * 100
+        learned: (currentProgress.learned.length / totalCards) * 100,
+        mastered: (currentProgress.mastered.length / totalCards) * 100,
+        unfamiliar: (currentProgress.unfamiliar.length / totalCards) * 100,
       });
-      setDeck({...updatedDeck, progress: currentProgress});
-  
+      setDeck({ ...updatedDeck });
     } catch (error) {
       console.error('Error saving progress:', error);
       setError('Failed to save progress');
     }
   };
+  
 
   const resetProgress = () => {
     if (!deck) return;
@@ -129,57 +255,72 @@ const DynamicTestPage = () => {
       wrongStreak: 0
     }));
   
+    // Reset cardStates
+    const initialCardStates = new Map();
+    updatedDeck.cards.forEach((_, index) => {
+      initialCardStates.set(index, {
+        streak: 0,
+        status: 'unfamiliar',
+        lastAnswered: null
+      });
+    });
+    setCardStates(initialCardStates);
+  
     updatedDeck.progress = {
       learned: 0,
       mastered: 0,
       unfamiliar: updatedDeck.cards.length
     };
   
-    saveProgress(updatedDeck); // Ensure this updates localStorage and state
+    saveProgress(updatedDeck);
     setProgress({ learned: 0, mastered: 0, unfamiliar: 100 });
     console.log('Progress reset successfully');
   };
-  
 
   const handleAnswer = (isCorrect) => {
     if (!deck || !currentCard) return;
-  
+
+    setCardStates(prevStates => {
+      const newStates = new Map(prevStates);
+      const cardIndex = deck.cards.findIndex(c => c.id === currentCard.id);
+      const currentState = newStates.get(cardIndex) || { 
+        streak: 0, 
+        status: 'unfamiliar',
+        lastAnswered: null 
+      };
+
+      let newStreak = isCorrect ? currentState.streak + 1 : currentState.streak - 1;
+      let newStatus = currentState.status;
+
+      if (newStreak >= STREAK_THRESHOLDS.MASTERY && newStatus === 'learned') {
+        newStatus = 'mastered';
+      } else if (newStreak >= STREAK_THRESHOLDS.LEARNED && newStatus === 'unfamiliar') {
+        newStatus = 'learned';
+      } else if (newStreak <= STREAK_THRESHOLDS.DEMOTION) {
+        newStatus = newStatus === 'mastered' ? 'learned' : 'unfamiliar';
+        newStreak = 0;
+      }
+
+      newStates.set(cardIndex, {
+        streak: newStreak,
+        status: newStatus,
+        lastAnswered: new Date()
+      });
+
+      return newStates;
+    });
+
     const updatedDeck = { ...deck };
     const cardIndex = updatedDeck.cards.findIndex(c => c.id === currentCard.id);
-    const card = updatedDeck.cards[cardIndex];
-  
-    if (isCorrect) {
-      // Reset wrong streak on correct answer
-      card.wrongStreak = 0;
-      
-      if (card.mastered) {
-        card.consecutiveCorrect = Math.min((card.consecutiveCorrect || 0) + 1, 2);
-      } else if (card.learned) {
-        card.consecutiveCorrect = (card.consecutiveCorrect || 0) + 1;
-        if (card.consecutiveCorrect >= 3) {
-          card.mastered = true;
-          // Keep learned status when mastering
-          card.learned = true;
-        }
-      } else {
-        card.learned = true;
-        card.consecutiveCorrect = 1;
-      }
-    } else {
-      card.consecutiveCorrect = 0;
-      card.wrongStreak = (card.wrongStreak || 0) + 1;
-  
-      if (card.wrongStreak >= 2) {
-        if (card.mastered) {
-          card.mastered = false;
-          // Demote to learned
-          card.learned = true;
-        } else if (card.learned) {
-          card.learned = false;
-        }
-      }
+    const state = cardStates.get(cardIndex);
+    
+    if (state) {
+      const card = updatedDeck.cards[cardIndex];
+      card.learned = state.status === 'learned' || state.status === 'mastered';
+      card.mastered = state.status === 'mastered';
+      card.consecutiveCorrect = state.streak;
     }
-  
+
     saveProgress(updatedDeck);
     selectNextCard(updatedDeck);
   };
@@ -235,29 +376,49 @@ const DynamicTestPage = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`http://localhost:5000/flashcards/decks/${params.deckId}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `http://localhost:5000/flashcards/decks/${params.deckId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
   
       if (!response.ok) {
-        throw new Error('Failed to load deck');
+        const error = await response.json();
+        console.error('Failed to load deck:', error);
+        setError(error.message || 'Failed to load deck');
+        return;
       }
   
       const currentDeck = await response.json();
-  
-      currentDeck.cards = currentDeck.cards.map(card => ({
+      currentDeck.cards = currentDeck.cards.map((card) => ({
         ...card,
         learned: card.learned || false,
         mastered: card.mastered || false,
         consecutiveCorrect: card.consecutiveCorrect || 0,
-        wrongStreak: card.wrongStreak || 0
+        wrongStreak: card.wrongStreak || 0,
       }));
   
+      const initialCardStates = new Map();
+      currentDeck.cards.forEach((card, index) => {
+        const status = card.mastered
+          ? 'mastered'
+          : card.learned
+          ? 'learned'
+          : 'unfamiliar';
+        initialCardStates.set(index, {
+          streak: card.consecutiveCorrect || 0,
+          status,
+          lastAnswered: null,
+        });
+      });
+  
+      setCardStates(initialCardStates);
       const newProgress = calculateProgress(currentDeck.cards);
       setProgress({
         learned: newProgress.learned,
         mastered: newProgress.mastered,
-        unfamiliar: newProgress.unfamiliar
+        unfamiliar: newProgress.unfamiliar,
       });
   
       setDeck(currentDeck);
@@ -269,11 +430,62 @@ const DynamicTestPage = () => {
       setLoading(false);
     }
   };
+
+  const handleLearn = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(
+        `http://localhost:5000/flashcards/decks/${params.deckId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+  
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Failed to fetch deck progress:', error);
+        return;
+      }
+  
+      const updatedDeck = await response.json();
+      console.log('Fetched deck progress:', updatedDeck);
+  
+      // Update the deck state with the latest progress
+      updatedDeck.cards = updatedDeck.cards.map((card) => ({
+        ...card,
+        learned: card.learned || false,
+        mastered: card.mastered || false,
+        consecutiveCorrect: card.consecutiveCorrect || 0,
+        wrongStreak: card.wrongStreak || 0,
+      }));
+  
+      setDeck(updatedDeck);
+  
+      // Recalculate and update progress
+      const totalCards = updatedDeck.cards.length;
+      const learned = updatedDeck.cards.filter((c) => c.learned && !c.mastered).length;
+      const mastered = updatedDeck.cards.filter((c) => c.mastered).length;
+  
+      setProgress({
+        learned: (learned / totalCards) * 100,
+        mastered: (mastered / totalCards) * 100,
+        unfamiliar: (totalCards - (learned + mastered)) / totalCards * 100,
+      });
+  
+      // Navigate to the learning screen
+      router.push(`/test/${params.deckId}`);
+    } catch (error) {
+      console.error('Error in handleLearn:', error);
+    }
+  };
+  
   
 
   useEffect(() => {
     loadDeck();
   }, [params.deckId]);
+
+  
 
   if (loading) {
     return (
@@ -283,13 +495,14 @@ const DynamicTestPage = () => {
     );
   }
 
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 text-lg mb-4">{error}</p>
           <button
-            onClick={() => router.push(`/test/${deckId}`)}
+            onClick={() => router.push('/test')}
             className="text-blue-500 hover:underline"
           >
             Return to Test Page
@@ -305,71 +518,94 @@ const DynamicTestPage = () => {
     term: isTermQuestion ? currentCard.term : currentCard.definition,
     correctAnswer: isTermQuestion ? currentCard.definition : currentCard.term,
     onAnswer: handleAnswer,
-    progress,
+    progress: {
+      totalCards: deck.cards.length,
+      learnedCount: Array.from(cardStates.values()).filter(state => 
+        state.status === 'learned').length,
+      masteredCount: Array.from(cardStates.values()).filter(state => 
+        state.status === 'mastered').length
+    },
     deckTitle: deck.title,
     isTermQuestion
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-    <div className="flex justify-center items-center">
-      {questionType === QUESTION_TYPES.MULTIPLE_CHOICE.type && (
-        <QuestionMultipleChoice
-          {...commonProps}
-          distractors={distractors}
-        />
-      )}
-      
-      {questionType === QUESTION_TYPES.TRUE_FALSE.type && (
-        <QuestionTrueFalse
-          {...commonProps}
-          term={currentCard.term}
-          definition={currentCard.definition}
-          alternativeContent={getAlternativeContent(deck, currentCard, isTermQuestion)}
-          isCorrectPair={Math.random() >= 0.5}
-        />
-      )}
-      
-      {questionType === QUESTION_TYPES.WRITTEN.type && (
-        <QuestionWritten {...commonProps} />
-      )}
-  
-        <button
-          onClick={() => {
-            if (deck) {
-              saveProgress(deck);
+      <div className="flex justify-center items-center">
+        {questionType === QUESTION_TYPES.MULTIPLE_CHOICE.type && (
+          <QuestionMultipleChoice
+            {...commonProps}
+            distractors={distractors}
+          />
+        )}
+        
+        {questionType === QUESTION_TYPES.TRUE_FALSE.type && (
+          <QuestionTrueFalse
+            {...commonProps}
+            term={currentCard.term}
+            definition={currentCard.definition}
+            alternativeContent={getAlternativeContent(deck, currentCard, isTermQuestion)}
+            isCorrectPair={Math.random() >= 0.5}
+          />
+        )}
+        
+        {questionType === QUESTION_TYPES.WRITTEN.type && (
+          <QuestionWritten {...commonProps} />
+        )}
+       <button
+          onClick={async () => {
+            setShowSaveModal(true);
+            setSaveStatus('saving');
+            
+            const result = await saveAllProgress();
+            
+            if (result.success) {
+              setSaveStatus('success');
+              // Wait for 1 second to show success message
+              setTimeout(() => {
+                setShowSaveModal(false);
+                router.push('/test');
+              }, 1000);
+            } else {
+              setSaveStatus('error');
+              setSaveError(result.error || 'Failed to save progress');
             }
-            router.push('/test');
           }}
-          className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors">
+          className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors"
+        >
           <X size={24} />
         </button>
-    </div>
-  
-    {/* Clear Progress Button */}
-    <button
-      onClick={resetProgress}
-      className="fixed bottom-6 right-6 p-3 bg-gray-100 text-gray-700 rounded shadow hover:bg-gray-200 transition-all"
-    >
-      Clear Progress
-    </button>
-  
-    {/* Progress Bar */}
-    <div className="fixed bottom-0 left-0 w-full h-2">
-      <div className="relative w-full h-full bg-gray-200">
-        {/* Mastered Progress (Green) */}
-        <div
-          className="absolute h-full bg-[#61cc03] transition-all duration-300"
-          style={{ width: `${progress.mastered}%` }}
-        />
-        {/* Learned Progress (Blue) */}
-        <div
-          className="absolute h-full bg-blue-400 transition-all duration-300"
-          style={{ width: `${progress.learned}%` }}
-        />
       </div>
+
+      <button
+        onClick={resetProgress}
+        className="fixed bottom-6 right-6 p-3 bg-gray-100 text-gray-700 rounded shadow hover:bg-gray-200 transition-all"
+      >
+        Clear Progress
+      </button>
+
+      <ProgressBar
+            totalCards={deck.cards.length}
+            learnedCount={cardStates ? Array.from(cardStates.values()).filter(state => 
+              state.status === 'learned').length : 0}
+            masteredCount={cardStates ? Array.from(cardStates.values()).filter(state => 
+              state.status === 'mastered').length : 0}
+            className="fixed bottom-0 left-0 w-full"
+            showLabels={false}
+       />
+        <SaveModal 
+          isOpen={showSaveModal}
+          onClose={() => {
+            if (saveStatus === 'success') {
+              router.push('/test');
+            }
+            setShowSaveModal(false);
+          }}
+          status={saveStatus}
+          error={saveError}
+        />
     </div>
-  </div>     
+
   );
 };
 

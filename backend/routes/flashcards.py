@@ -196,32 +196,67 @@ def update_deck_progress(deck_id):
     try:
         user_id = get_jwt_identity()
         data = request.get_json()
-        
-        # Validate progress data
+
         if not isinstance(data.get('progress'), dict):
+            logging.error("Invalid progress format received.")
             return jsonify({"error": "Invalid progress format"}), 400
-            
-        # Update only progress field
-        result = flashcards_collection.update_one(
+
+        # Fetch the current deck
+        deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
+        if not deck:
+            logging.error(f"Deck with ID {deck_id} not found.")
+            return jsonify({"error": "Deck not found"}), 404
+
+        logging.info(f"Updating progress for Deck ID: {deck_id}")
+
+        updated_cards = []
+        for card_index, card in enumerate(deck['cards']):
+            # Update status
+            if card_index in data['progress'].get('mastered', []):
+                card['status'] = 'mastered'
+            elif card_index in data['progress'].get('learned', []):
+                card['status'] = 'learned'
+            else:
+                card['status'] = 'unfamiliar'
+
+            # Update streak and last reviewed if provided
+            if 'cardStates' in data and str(card_index) in data['cardStates']:
+                card_state = data['cardStates'][str(card_index)]
+                card['streak'] = card_state.get('streak', 0)
+                card['last_reviewed'] = datetime.utcnow()
+
+            updated_cards.append(card)
+
+        # Update progress
+        progress = {
+            "learned": data['progress'].get('learned', []),
+            "mastered": data['progress'].get('mastered', []),
+            "unfamiliar": data['progress'].get('unfamiliar', []),
+        }
+
+        flashcards_collection.update_one(
             {"_id": ObjectId(deck_id), "user_id": user_id},
             {"$set": {
-                "progress": {
-                    "learned": data['progress'].get('learned', []),
-                    "mastered": data['progress'].get('mastered', []),
-                    "unfamiliar": data['progress'].get('unfamiliar', [])
-                },
+                "cards": updated_cards,
+                "progress": progress,
                 "updated_at": datetime.utcnow()
             }}
         )
-        
-        if result.matched_count == 0:
-            return jsonify({"error": "Deck not found"}), 404
-            
-        return jsonify({"message": "Progress updated successfully"}), 200
-        
+
+        # Return counts for frontend
+        progress_counts = {
+            "learned_count": len(progress["learned"]),
+            "mastered_count": len(progress["mastered"]),
+            "unfamiliar_count": len(progress["unfamiliar"]),
+        }
+
+        logging.info(f"Progress updated successfully for Deck ID: {deck_id}")
+        return jsonify({"message": "Progress updated successfully", "progress_counts": progress_counts}), 200
+
     except Exception as e:
         logging.error(f"Error updating deck progress: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+
 
 @flashcards_bp.route('/decks/<deck_id>', methods=['DELETE'])
 @jwt_required()

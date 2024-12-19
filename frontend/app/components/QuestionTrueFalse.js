@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ProgressBar from './ProgressBar';
 
 const QuestionTrueFalse = ({ 
   term, 
@@ -7,7 +8,7 @@ const QuestionTrueFalse = ({
   isTermQuestion,
   isCorrectPair, 
   onAnswer,
-  progress,
+  progress: { totalCards, learnedCount, masteredCount },
   deckTitle 
 }) => {
   const [selected, setSelected] = useState(null);
@@ -100,21 +101,14 @@ const QuestionTrueFalse = ({
         })}
       </div>
 
-      {/* Progress Bar */}
-      <div className="mt-8">
-        <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-          {/* Mastered Progress (Green) */}
-          <div
-            className="absolute h-full bg-[#61cc03] transition-all duration-300"
-            style={{ width: `${progress?.mastered || 0}%` }}
-          />
-          {/* Learned Progress (Blue) */}
-          <div
-            className="absolute h-full bg-blue-400 transition-all duration-300"
-            style={{ width: `${progress?.learned || 0}%` }}
-          />
-        </div>
-      </div>
+      {/* New Progress Bar */}
+      <ProgressBar
+        totalCards={totalCards}
+        learnedCount={learnedCount}
+        masteredCount={masteredCount}
+        className="mt-8"
+        showLabels={false}
+      />
     </div>
   );
 };

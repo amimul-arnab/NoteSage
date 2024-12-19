@@ -36,8 +36,10 @@ class FlashcardCard:
     def __init__(self, term, definition, image=None):
         self.term = term
         self.definition = definition
-        self.image = image  # Either None or a URL to S3
-        # No timestamps here as cards are embedded documents within decks
+        self.image = image
+        self.streak = 0
+        self.status = 'unfamiliar'  # 'unfamiliar', 'learned', or 'mastered'
+        self.last_reviewed = None
 
 class FlashcardDeck:
     def __init__(self, user_id, title, description, underglowColor="", cards=None):

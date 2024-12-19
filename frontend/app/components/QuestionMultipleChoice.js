@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { shuffle } from 'lodash';
+import ProgressBar from './ProgressBar';
 
 const QuestionMultipleChoice = ({ 
   term,  // This will be the question (term or definition)
   correctAnswer, // This will be the correct answer (definition if term is question, vice versa)
   distractors, // These should match the type of correctAnswer
   onAnswer,
-  progress,
+  progress: { totalCards, learnedCount, masteredCount },
   deckTitle,
   isTermQuestion // indicates if term is the question (true) or answer (false)
 }) => {
@@ -95,21 +96,14 @@ const QuestionMultipleChoice = ({
         })}
       </div>
 
-      {/* Progress Bar */}
-      <div className="mt-8">
-        <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-          {/* Mastered Progress (Green) */}
-          <div
-            className="absolute h-full bg-[#61cc03] transition-all duration-300"
-            style={{ width: `${progress?.mastered || 0}%` }}
-          />
-          {/* Learned Progress (Blue) */}
-          <div
-            className="absolute h-full bg-blue-400 transition-all duration-300"
-            style={{ width: `${progress?.learned || 0}%` }}
-          />
-        </div>
-      </div>
+      {/* New Progress Bar */}
+      <ProgressBar
+        totalCards={totalCards}
+        learnedCount={learnedCount}
+        masteredCount={masteredCount}
+        className="mt-8"
+        showLabels={false}
+      />
     </div>
   );
 };
