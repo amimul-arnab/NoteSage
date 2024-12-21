@@ -60,7 +60,6 @@ def upload_card_images(cards, user_id):
                     s3_url = s3_manager.upload_base64(base64_str, user_id, filename)
                     updated_card['image'] = s3_url
                 else:
-                    # If it's not a base64 image and not a URL, set image to None or handle accordingly
                     updated_card['image'] = None
             except Exception as e:
                 logging.error(f"Failed to process image for card: {e}", exc_info=True)
@@ -81,7 +80,6 @@ def create_deck():
             return jsonify({"error": "Missing required fields: title, description"}), 400
 
         cards = data.get("cards", [])
-        # Upload images for cards if needed
         cards = upload_card_images(cards, user_id)
 
         new_deck = {
@@ -95,6 +93,13 @@ def create_deck():
                 "mastered": [],
                 "unfamiliar": list(range(len(cards)))
             },
+            "cardStates": {
+                str(i): {
+                    'streak': 0,
+                    'status': 'unfamiliar',
+                    'lastAnswered': None
+                } for i in range(len(cards))
+            },
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
@@ -105,61 +110,6 @@ def create_deck():
         return jsonify(new_deck), 201
     except Exception as e:
         logging.error(f"Error creating deck: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
-
-@flashcards_bp.route('/decks/<deck_id>', methods=['GET'])
-@jwt_required()
-@cross_origin()
-def get_deck(deck_id):
-    try:
-        user_id = get_jwt_identity()
-        deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
-        if not deck:
-            return jsonify({"error": "Deck not found"}), 404
-
-        # Ensure progress structure exists
-        if 'progress' not in deck:
-            deck['progress'] = {
-                'learned': [],
-                'mastered': [],
-                'unfamiliar': list(range(len(deck.get('cards', []))))
-            }
-
-        # Initialize cardStates if not present
-        if 'cardStates' not in deck:
-            deck['cardStates'] = {
-                str(i): {
-                    'streak': 0,
-                    'status': 'unfamiliar',
-                    'lastAnswered': None
-                } for i in range(len(deck.get('cards', [])))
-            }
-
-        # Update cards with their current states
-        for i, card in enumerate(deck.get('cards', [])):
-            card_state = deck['cardStates'].get(str(i), {})
-            card['status'] = card_state.get('status', 'unfamiliar')
-            card['streak'] = card_state.get('streak', 0)
-            card['learned'] = card_state.get('status') == 'learned'
-            card['mastered'] = card_state.get('status') == 'mastered'
-
-        # Calculate progress counts for TestUI
-        total_cards = len(deck.get('cards', []))
-        learned_count = len([c for c in deck.get('cards', []) if c.get('learned') and not c.get('mastered')])
-        mastered_count = len([c for c in deck.get('cards', []) if c.get('mastered')])
-        unfamiliar_count = total_cards - learned_count - mastered_count
-
-        deck['progress_counts'] = {
-            'learned': learned_count,
-            'mastered': mastered_count,
-            'unfamiliar': unfamiliar_count,
-            'total': total_cards
-        }
-
-        deck["_id"] = str(deck["_id"])
-        return jsonify(deck), 200
-    except Exception as e:
-        logging.error(f"Error fetching deck: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
 @flashcards_bp.route('/decks', methods=['GET'])
@@ -199,6 +149,61 @@ def list_decks():
         logging.error(f"Error listing decks: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
+@flashcards_bp.route('/decks/<deck_id>', methods=['GET'])
+@jwt_required()
+@cross_origin()
+def get_deck(deck_id):
+    try:
+        user_id = get_jwt_identity()
+        deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
+        if not deck:
+            return jsonify({"error": "Deck not found"}), 404
+
+        # Ensure progress structure exists
+        if 'progress' not in deck:
+            deck['progress'] = {
+                'learned': [],
+                'mastered': [],
+                'unfamiliar': list(range(len(deck.get('cards', []))))
+            }
+
+        # Initialize cardStates if not present
+        if 'cardStates' not in deck:
+            deck['cardStates'] = {
+                str(i): {
+                    'streak': 0,
+                    'status': 'unfamiliar',
+                    'lastAnswered': None
+                } for i in range(len(deck.get('cards', [])))
+            }
+
+        # Update cards with their current states
+        for i, card in enumerate(deck.get('cards', [])):
+            card_state = deck['cardStates'].get(str(i), {})
+            card['status'] = card_state.get('status', 'unfamiliar')
+            card['streak'] = card_state.get('streak', 0)
+            card['learned'] = card_state.get('status') in ['learned', 'mastered']
+            card['mastered'] = card_state.get('status') == 'mastered'
+
+        # Calculate progress counts for TestUI
+        total_cards = len(deck.get('cards', []))
+        learned_count = len([c for c in deck.get('cards', []) if c.get('learned') and not c.get('mastered')])
+        mastered_count = len([c for c in deck.get('cards', []) if c.get('mastered')])
+        unfamiliar_count = total_cards - learned_count - mastered_count
+
+        deck['progress_counts'] = {
+            'learned': learned_count,
+            'mastered': mastered_count,
+            'unfamiliar': unfamiliar_count,
+            'total': total_cards
+        }
+
+        deck["_id"] = str(deck["_id"])
+        return jsonify(deck), 200
+    except Exception as e:
+        logging.error(f"Error fetching deck: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
 @flashcards_bp.route('/decks/<deck_id>', methods=['PUT'])
 @jwt_required()
 @cross_origin()
@@ -224,11 +229,17 @@ def update_deck(deck_id):
         if "cards" in data:
             updated_cards = upload_card_images(data["cards"], user_id)
             update_fields["cards"] = updated_cards
-            # Initialize progress for new cards
             update_fields["progress"] = {
                 "learned": [],
                 "mastered": [],
                 "unfamiliar": list(range(len(updated_cards)))
+            }
+            update_fields["cardStates"] = {
+                str(i): {
+                    'streak': 0,
+                    'status': 'unfamiliar',
+                    'lastAnswered': None
+                } for i in range(len(updated_cards))
             }
 
         update_fields["updated_at"] = datetime.utcnow()
@@ -248,8 +259,6 @@ def update_deck(deck_id):
     except Exception as e:
         logging.error(f"Error updating deck: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-    
-    
 
 @flashcards_bp.route('/decks/<deck_id>/progress', methods=['PUT'])
 @jwt_required()
@@ -270,7 +279,7 @@ def update_deck_progress(deck_id):
         # Store both progress and cardStates
         update_data = {
             "progress": data['progress'],
-            "cardStates": data.get('cardStates', {}),  # Store the complete cardStates
+            "cardStates": data.get('cardStates', {}),
             "updated_at": datetime.utcnow()
         }
 
@@ -290,7 +299,6 @@ def update_deck_progress(deck_id):
 
         update_data['cards'] = updated_cards
 
-        # Update the deck with all data
         result = flashcards_collection.update_one(
             {"_id": ObjectId(deck_id), "user_id": user_id},
             {"$set": update_data}
@@ -317,145 +325,6 @@ def update_deck_progress(deck_id):
     except Exception as e:
         logging.error(f"Error updating deck progress: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-
-
-@flashcards_bp.route('/decks/<deck_id>', methods=['GET'])
-@jwt_required()
-@cross_origin()
-def get_deck(deck_id):
-    try:
-        user_id = get_jwt_identity()
-        deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
-        if not deck:
-            return jsonify({"error": "Deck not found"}), 404
-
-        deck["_id"] = str(deck["_id"])
-        return jsonify(deck), 200
-    except Exception as e:
-        logging.error(f"Error fetching deck: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
-
-@flashcards_bp.route('/decks/<deck_id>', methods=['PUT'])
-@jwt_required()
-@cross_origin()
-def update_deck(deck_id):
-    try:
-        user_id = get_jwt_identity()
-        data = request.get_json()
-
-        if request.content_length and request.content_length > 10 * 1024 * 1024:
-            return jsonify({"error": "Request too large"}), 413
-
-        # Fetch existing deck
-        deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
-        if not deck:
-            return jsonify({"error": "Deck not found"}), 404
-
-        update_fields = {}
-        if "title" in data:
-            update_fields["title"] = data["title"].strip()
-        if "description" in data:
-            update_fields["description"] = data["description"].strip()
-        if "underglowColor" in data:
-            update_fields["underglowColor"] = data["underglowColor"]
-        if "cards" in data:
-            # Upload images for cards if they are base64
-            updated_cards = upload_card_images(data["cards"], user_id)
-            update_fields["cards"] = updated_cards
-            # Initialize progress for new cards
-            update_fields["progress"] = {
-                "learned": [],
-                "mastered": [],
-                "unfamiliar": list(range(len(updated_cards)))
-            }
-
-        update_fields["updated_at"] = datetime.utcnow()
-
-        with client.start_session() as session:
-            with session.start_transaction():
-                flashcards_collection.update_one(
-                    {"_id": ObjectId(deck_id), "user_id": user_id},
-                    {"$set": update_fields},
-                    session=session
-                )
-
-        updated_deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
-        updated_deck["_id"] = str(updated_deck["_id"])
-        return jsonify(updated_deck), 200
-
-    except Exception as e:
-        logging.error(f"Error updating deck: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
-
-
-@flashcards_bp.route('/decks/<deck_id>', methods=['GET'])
-@jwt_required()
-@cross_origin()
-def get_deck(deck_id):
-    try:
-        user_id = get_jwt_identity()
-        deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
-        if not deck:
-            return jsonify({"error": "Deck not found"}), 404
-
-        deck["_id"] = str(deck["_id"])
-        return jsonify(deck), 200
-    except Exception as e:
-        logging.error(f"Error fetching deck: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
-
-@flashcards_bp.route('/decks/<deck_id>', methods=['PUT'])
-@jwt_required()
-@cross_origin()
-def update_deck(deck_id):
-    try:
-        user_id = get_jwt_identity()
-        data = request.get_json()
-
-        if request.content_length and request.content_length > 10 * 1024 * 1024:
-            return jsonify({"error": "Request too large"}), 413
-
-        # Fetch existing deck
-        deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
-        if not deck:
-            return jsonify({"error": "Deck not found"}), 404
-
-        update_fields = {}
-        if "title" in data:
-            update_fields["title"] = data["title"].strip()
-        if "description" in data:
-            update_fields["description"] = data["description"].strip()
-        if "underglowColor" in data:
-            update_fields["underglowColor"] = data["underglowColor"]
-        if "cards" in data:
-            # Upload images for cards if they are base64
-            updated_cards = upload_card_images(data["cards"], user_id)
-            update_fields["cards"] = updated_cards
-            # Initialize progress for new cards
-            update_fields["progress"] = {
-                "learned": [],
-                "mastered": [],
-                "unfamiliar": list(range(len(updated_cards)))
-            }
-
-        update_fields["updated_at"] = datetime.utcnow()
-
-        with client.start_session() as session:
-            with session.start_transaction():
-                flashcards_collection.update_one(
-                    {"_id": ObjectId(deck_id), "user_id": user_id},
-                    {"$set": update_fields},
-                    session=session
-                )
-
-        updated_deck = flashcards_collection.find_one({"_id": ObjectId(deck_id), "user_id": user_id})
-        updated_deck["_id"] = str(updated_deck["_id"])
-        return jsonify(updated_deck), 200
-
-    except Exception as e:
-        logging.error(f"Error updating deck: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
-
 
 @flashcards_bp.route('/decks/<deck_id>', methods=['DELETE'])
 @jwt_required()
@@ -533,6 +402,13 @@ def generate_deck_from_note():
                 "learned": [],
                 "mastered": [],
                 "unfamiliar": list(range(len(flashcards)))
+            },
+            "cardStates": {
+                str(i): {
+                    'streak': 0,
+                    'status': 'unfamiliar',
+                    'lastAnswered': None
+                } for i in range(len(flashcards))
             },
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()

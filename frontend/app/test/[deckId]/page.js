@@ -1,5 +1,3 @@
-// app/test/[testId]/page.js
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +9,6 @@ import QuestionTrueFalse from '../../components/QuestionTrueFalse';
 import QuestionWritten from '../../components/QuestionWritten';
 import ProgressBar from '../../components/ProgressBar';
 
-// SaveModal Component
 const SaveModal = ({ isOpen, onClose, status, error }) => {
   if (!isOpen) return null;
 
@@ -50,6 +47,7 @@ const SaveModal = ({ isOpen, onClose, status, error }) => {
   );
 };
 
+
 // Constants for question type probabilities
 const QUESTION_TYPES = {
   MULTIPLE_CHOICE: { type: 'multiple-choice', probability: 45 },
@@ -72,10 +70,10 @@ const DynamicTestPage = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [saveError, setSaveError] = useState('');
-  const [progress, setProgress] = useState({
-    learned: 0,
-    mastered: 0,
-    unfamiliar: 0,
+  const [progress, setProgress] = useState({ 
+    learned: 0, 
+    mastered: 0, 
+    unfamiliar: 0 
   });
   const [cardStates, setCardStates] = useState(new Map());
   const [distractors, setDistractors] = useState([]);
@@ -83,50 +81,38 @@ const DynamicTestPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Utility function to get random question type based on probabilities
   const getRandomQuestionType = () => {
     const random = Math.random() * 100;
     if (random < QUESTION_TYPES.MULTIPLE_CHOICE.probability) {
       return QUESTION_TYPES.MULTIPLE_CHOICE.type;
     }
-    if (
-      random <
-      QUESTION_TYPES.MULTIPLE_CHOICE.probability +
-        QUESTION_TYPES.TRUE_FALSE.probability
-    ) {
+    if (random < QUESTION_TYPES.MULTIPLE_CHOICE.probability + QUESTION_TYPES.TRUE_FALSE.probability) {
       return QUESTION_TYPES.TRUE_FALSE.type;
     }
     return QUESTION_TYPES.WRITTEN.type;
   };
 
-  // Get alternative content for True/False questions
-  const getAlternativeContent = (
-    currentDeck,
-    currentCard,
-    isDefinition = true
-  ) => {
+  const getAlternativeContent = (currentDeck, currentCard, isDefinition = true) => {
     if (!currentDeck?.cards?.length || !currentCard) {
       console.error('Missing deck or card data for alternative content');
       return '';
     }
 
-    const otherCards = currentDeck.cards.filter((c) => c.id !== currentCard.id);
+    const otherCards = currentDeck.cards.filter(c => c.id !== currentCard.id);
     if (!otherCards.length) {
       console.error('No other cards available for alternatives');
       return isDefinition ? currentCard.definition : currentCard.term;
     }
 
-    const randomCard =
-      otherCards[Math.floor(Math.random() * otherCards.length)];
+    const randomCard = otherCards[Math.floor(Math.random() * otherCards.length)];
     return isDefinition ? randomCard.definition : randomCard.term;
   };
 
 
-  // Save all progress to the server
   const saveAllProgress = async () => {
     try {
       if (!deck) return { success: false, error: 'No deck data' };
-
+  
       const states = Array.from(cardStates.entries());
       const currentProgress = {
         learned: states.filter(([_, state]) => state.status === 'learned').map(([index]) => index),
@@ -142,7 +128,7 @@ const DynamicTestPage = () => {
           lastAnswered: state.lastAnswered,
         };
       });
-
+  
       const token = localStorage.getItem('access_token');
       const response = await fetch(
         `http://localhost:5000/flashcards/decks/${params.deckId}/progress`,
@@ -158,7 +144,7 @@ const DynamicTestPage = () => {
           }),
         }
       );
-
+  
       if (!response.ok) {
         throw new Error('Failed to save final progress');
       }
@@ -174,9 +160,6 @@ const DynamicTestPage = () => {
     if (!deck || !currentCard) return;
   
     try {
-      setSaveStatus('saving');
-      setShowSaveModal(true);
-
       const states = Array.from(cardStates.entries());
       const currentProgress = {
         learned: states
@@ -262,12 +245,12 @@ const DynamicTestPage = () => {
           }),
         }
       );
-
+  
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to save progress');
       }
-
+  
       const totalCards = updatedDeck.cards.length;
       setProgress({
         learned: (currentProgress.learned.length / totalCards) * 100,
@@ -289,37 +272,37 @@ const DynamicTestPage = () => {
       setSaveError(error.message);
     }
   };
+  
 
-  // Reset all progress
   const resetProgress = () => {
     if (!deck) return;
-
+  
     const updatedDeck = { ...deck };
-    updatedDeck.cards = updatedDeck.cards.map((card) => ({
+    updatedDeck.cards = updatedDeck.cards.map(card => ({
       ...card,
       learned: false,
       mastered: false,
       consecutiveCorrect: 0,
-      wrongStreak: 0,
+      wrongStreak: 0
     }));
-
+  
     // Reset cardStates
     const initialCardStates = new Map();
     updatedDeck.cards.forEach((_, index) => {
       initialCardStates.set(index, {
         streak: 0,
         status: 'unfamiliar',
-        lastAnswered: null,
+        lastAnswered: null
       });
     });
     setCardStates(initialCardStates);
-
+  
     updatedDeck.progress = {
       learned: 0,
       mastered: 0,
-      unfamiliar: updatedDeck.cards.length,
+      unfamiliar: updatedDeck.cards.length
     };
-
+  
     saveProgress(updatedDeck);
     setProgress({ learned: 0, mastered: 0, unfamiliar: 100 });
     console.log('Progress reset successfully');
@@ -343,21 +326,17 @@ const DynamicTestPage = () => {
       // Handle status transitions
       if (newStreak >= STREAK_THRESHOLDS.MASTERY && newStatus === 'learned') {
         newStatus = 'mastered';
-      } else if (
-        newStreak >= STREAK_THRESHOLDS.LEARNED &&
-        newStatus === 'unfamiliar'
-      ) {
+      } else if (newStreak >= STREAK_THRESHOLDS.LEARNED && newStatus === 'unfamiliar') {
         newStatus = 'learned';
       } else if (newStreak <= STREAK_THRESHOLDS.DEMOTION) {
-        newStatus =
-          newStatus === 'mastered' ? 'learned' : 'unfamiliar';
+        newStatus = newStatus === 'mastered' ? 'learned' : 'unfamiliar';
         newStreak = 0;
       }
   
       newStates.set(cardIndex, {
         streak: newStreak,
         status: newStatus,
-        lastAnswered: new Date(),
+        lastAnswered: new Date()
       });
   
       return newStates;
@@ -385,52 +364,39 @@ const DynamicTestPage = () => {
     if (!currentDeck?.cards?.length) return;
 
     try {
-      const unfamiliarCards = currentDeck.cards.filter(
-        (card) => !card.learned && !card.mastered
+      const unfamiliarCards = currentDeck.cards.filter(card => 
+        !card.learned && !card.mastered
       );
-      const learnedCards = currentDeck.cards.filter(
-        (card) => card.learned && !card.mastered
+      const learnedCards = currentDeck.cards.filter(card => 
+        card.learned && !card.mastered
       );
-      const masteredCards = currentDeck.cards.filter(
-        (card) => card.mastered
+      const masteredCards = currentDeck.cards.filter(card => 
+        card.mastered
       );
-
-      let availableCards =
-        unfamiliarCards.length > 0
-          ? unfamiliarCards
-          : learnedCards.length > 0
-          ? learnedCards
+      
+      let availableCards = unfamiliarCards.length > 0 
+        ? unfamiliarCards 
+        : learnedCards.length > 0 
+          ? learnedCards 
           : masteredCards;
 
       if (currentCard && availableCards.length > 1) {
-        availableCards = availableCards.filter(
-          (card) => card.id !== currentCard.id
-        );
+        availableCards = availableCards.filter(card => card.id !== currentCard.id);
       }
 
-      if (availableCards.length === 0) {
-        setError('No available cards to display.');
-        return;
-      }
-
-      const selectedCard =
-        availableCards[Math.floor(Math.random() * availableCards.length)];
+      const selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
       const type = getRandomQuestionType();
       const showTerm = Math.random() >= 0.5;
-
+      
       setQuestionType(type);
       setIsTermQuestion(showTerm);
 
       if (type === QUESTION_TYPES.MULTIPLE_CHOICE.type) {
-        const otherCards = currentDeck.cards.filter(
-          (c) => c.id !== selectedCard.id
-        );
+        const otherCards = currentDeck.cards.filter(c => c.id !== selectedCard.id);
         const answersFromOtherCards = shuffle(otherCards)
           .slice(0, 3)
-          .map((c) =>
-            showTerm ? c.definition : c.term
-          );
-
+          .map(c => showTerm ? c.definition : c.term);
+          
         setDistractors(answersFromOtherCards);
       }
 
@@ -441,7 +407,6 @@ const DynamicTestPage = () => {
     }
   };
 
-  // Load deck data, utilizing localStorage for caching
   const loadDeck = async () => {
     try {
       setLoading(true);
@@ -545,10 +510,10 @@ const DynamicTestPage = () => {
 
   useEffect(() => {
     loadDeck();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.deckId]);
 
-  // Render loading state
+  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -557,7 +522,7 @@ const DynamicTestPage = () => {
     );
   }
 
-  // Render error state
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -574,10 +539,8 @@ const DynamicTestPage = () => {
     );
   }
 
-  // If deck or currentCard is not available, render nothing
   if (!deck || !currentCard) return null;
 
-  // Common props for question components
   const commonProps = {
     term: isTermQuestion ? currentCard.term : currentCard.definition,
     correctAnswer: isTermQuestion ? currentCard.definition : currentCard.term,
@@ -602,28 +565,24 @@ const DynamicTestPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="flex justify-center items-center relative">
+      <div className="flex justify-center items-center">
         {questionType === QUESTION_TYPES.MULTIPLE_CHOICE.type && (
           <QuestionMultipleChoice
             {...commonProps}
             distractors={distractors}
           />
         )}
-
+        
         {questionType === QUESTION_TYPES.TRUE_FALSE.type && (
           <QuestionTrueFalse
             {...commonProps}
             term={currentCard.term}
             definition={currentCard.definition}
-            alternativeContent={getAlternativeContent(
-              deck,
-              currentCard,
-              isTermQuestion
-            )}
+            alternativeContent={getAlternativeContent(deck, currentCard, isTermQuestion)}
             isCorrectPair={Math.random() >= 0.5}
           />
         )}
-
+        
         {questionType === QUESTION_TYPES.WRITTEN.type && (
           <QuestionWritten {...commonProps} />
         )}
@@ -651,7 +610,6 @@ const DynamicTestPage = () => {
         </button>
       </div>
 
-      {/* Clear Progress Button */}
       <button
         onClick={resetProgress}
         className="fixed bottom-6 right-6 p-3 bg-gray-100 text-gray-700 rounded shadow hover:bg-gray-200 transition-all"
@@ -659,40 +617,28 @@ const DynamicTestPage = () => {
         Clear Progress
       </button>
 
-      {/* Progress Bar */}
       <ProgressBar
-        totalCards={deck.cards.length}
-        learnedCount={
-          cardStates
-            ? Array.from(cardStates.values()).filter(
-                (state) => state.status === 'learned'
-              ).length
-            : 0
-        }
-        masteredCount={
-          cardStates
-            ? Array.from(cardStates.values()).filter(
-                (state) => state.status === 'mastered'
-              ).length
-            : 0
-        }
-        className="fixed bottom-0 left-0 w-full"
-        showLabels={false}
-      />
-
-      {/* Save Modal */}
-      <SaveModal
-        isOpen={showSaveModal}
-        onClose={() => {
-          if (saveStatus === 'success') {
-            router.push('/test');
-          }
-          setShowSaveModal(false);
-        }}
-        status={saveStatus}
-        error={saveError}
-      />
+            totalCards={deck.cards.length}
+            learnedCount={cardStates ? Array.from(cardStates.values()).filter(state => 
+              state.status === 'learned').length : 0}
+            masteredCount={cardStates ? Array.from(cardStates.values()).filter(state => 
+              state.status === 'mastered').length : 0}
+            className="fixed bottom-0 left-0 w-full"
+            showLabels={false}
+       />
+        <SaveModal 
+          isOpen={showSaveModal}
+          onClose={() => {
+            if (saveStatus === 'success') {
+              router.push('/test');
+            }
+            setShowSaveModal(false);
+          }}
+          status={saveStatus}
+          error={saveError}
+        />
     </div>
+
   );
 };
 
