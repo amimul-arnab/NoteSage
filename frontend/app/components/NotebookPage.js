@@ -1,6 +1,127 @@
+// "use client";
+
+// import { useState } from 'react';
+// import { useRouter } from 'next/navigation';
+// import Link from 'next/link';
+// import { useEditor, EditorContent } from '@tiptap/react';
+// import StarterKit from '@tiptap/starter-kit';
+// import Underline from '@tiptap/extension-underline';
+// import Highlight from '@tiptap/extension-highlight';
+// import TextStyle from '@tiptap/extension-text-style';
+// import Color from '@tiptap/extension-color';
+// import MathExtension from './MathExtension';
+
+// export default function NotebookPage({ notebook }) {
+//   const router = useRouter();
+//   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+//   const [content, setContent] = useState(notebook.generatedContent || '');
+//   const [saving, setSaving] = useState(false);
+
+//   const editor = useEditor({
+//     extensions: [StarterKit, Underline, Highlight, TextStyle, Color, MathExtension],
+//     content,
+//     onUpdate: ({ editor }) => {
+//       setContent(editor.getHTML());
+//     },
+//     editable: true,
+//     editorProps: {
+//       attributes: {
+//         class: "prose prose-sm sm:prose lg:prose-lg xl:prose-xl m-5 focus:outline-none",
+//       },
+//     },
+//   });
+
+//   const handleSave = async () => {
+//     if (!token) {
+//       alert('You must be logged in to save.');
+//       return;
+//     }
+//     setSaving(true);
+//     try {
+//       const res = await fetch(`http://localhost:5000/notes/update_generated_notes/${notebook.id}`, {
+//         method: 'PUT',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Bearer ${token}`
+//         },
+//         body: JSON.stringify({ generated_content: content })
+//       });
+//       const data = await res.json();
+//       if (!res.ok) {
+//         console.error('Error saving generated notes:', data.error);
+//         alert('Failed to save changes.');
+//       } else {
+//         alert('Changes saved successfully!');
+//       }
+//     } catch (error) {
+//       console.error('Error saving generated notes:', error);
+//       alert('An error occurred while saving.');
+//     } finally {
+//       setSaving(false);
+//     }
+//   };
+
+//   if (!editor) {
+//     return <div>Loading Editor...</div>;
+//   }
+
+//   const applyFormat = (command) => {
+//     editor.chain().focus()[command]().run();
+//   };
+
+//   return (
+//     <div className="relative min-h-screen bg-white p-4">
+//       <div className="flex items-center justify-between mb-4">
+//         <div className="space-x-4">
+//           <Link href="/notes">
+//             <button className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300">Back</button>
+//           </Link>
+//           <button onClick={handleSave} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+//             {saving ? 'Saving...' : 'Save'}
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="mb-6">
+//         <h1 className="text-4xl font-bold">{notebook.title}</h1>
+//         <p className="text-lg text-gray-600">{notebook.description}</p>
+//         <p className="text-md text-gray-500">{notebook.category}</p>
+//         {notebook.image_url && (
+//           <img
+//             src={notebook.image_url}
+//             alt={notebook.title}
+//             className="w-32 h-32 object-cover rounded mt-4"
+//           />
+//         )}
+//       </div>
+
+//       {/* Permanent toolbar */}
+//       <div className="flex items-center space-x-2 mb-4 bg-gray-100 p-2 rounded">
+//         <button onClick={() => applyFormat('toggleBold')} className="px-2 py-1 hover:bg-gray-200">Bold</button>
+//         <button onClick={() => applyFormat('toggleItalic')} className="px-2 py-1 hover:bg-gray-200">Italic</button>
+//         <button onClick={() => applyFormat('toggleUnderline')} className="px-2 py-1 hover:bg-gray-200">Underline</button>
+//         <button onClick={() => applyFormat('toggleStrike')} className="px-2 py-1 hover:bg-gray-200">Strike</button>
+//         <button onClick={() => {
+//           const url = prompt("Enter URL:");
+//           if (url) editor.chain().focus().setLink({ href: url }).run();
+//         }} className="px-2 py-1 hover:bg-gray-200">
+//           Link
+//         </button>
+//       </div>
+
+//       <div className="editor-container mt-6 bg-white p-4 rounded shadow prose max-w-none">
+//         <EditorContent editor={editor} />
+//       </div>
+//     </div>
+//   );
+// }
+
+// frontend/app/components/NotebookPage.js
 "use client";
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -8,44 +129,18 @@ import Highlight from '@tiptap/extension-highlight';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import MathExtension from './MathExtension';
-import RichTextToolbar from './RichTextToolbar';
 
-export default function NotebookPage() {
-  const { notebookId } = useParams();
-  const [notebook, setNotebook] = useState(null);
-  const [content, setContent] = useState('');
-  const [isClient, setIsClient] = useState(false);
-  const [showToolbar, setShowToolbar] = useState(false);
-  const [selectionPosition, setSelectionPosition] = useState({ top: 0, left: 0 });
-  const [toolbarActive, setToolbarActive] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient) {
-      const savedNotebooks = JSON.parse(localStorage.getItem('notebooks')) || [];
-      const currentNotebook = savedNotebooks.find((nb) => nb.id === notebookId);
-
-      if (currentNotebook) {
-        setNotebook(currentNotebook);
-        setContent(localStorage.getItem(`notebook-${notebookId}`) || '');
-      }
-    }
-  }, [notebookId, isClient]);
+export default function NotebookPage({ notebook }) {
+  const router = useRouter();
+  const token = typeof window !== 'undefined' ? localStorage.getItem("access_token") : null;
+  const [content, setContent] = useState(notebook.generatedContent || '');
+  const [saving, setSaving] = useState(false);
 
   const editor = useEditor({
     extensions: [StarterKit, Underline, Highlight, TextStyle, Color, MathExtension],
-    content: content,
+    content,
     onUpdate: ({ editor }) => {
-      try {
-        const html = editor.getHTML();
-        setContent(html);
-        localStorage.setItem(`notebook-${notebookId}`, html);
-      } catch (error) {
-        console.error("Error updating content:", error);
-      }
+      setContent(editor.getHTML());
     },
     editable: true,
     editorProps: {
@@ -53,75 +148,122 @@ export default function NotebookPage() {
         class: "prose prose-sm sm:prose lg:prose-lg xl:prose-xl m-5 focus:outline-none",
       },
     },
-    immediatelyRender: false,
   });
 
-  const handleSelectionChange = () => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-
-      const toolbarTop = rect.top + window.scrollY - 50;
-      const toolbarLeft = rect.left + window.scrollX + rect.width / 2;
-
-      setSelectionPosition({ top: toolbarTop, left: toolbarLeft });
-      setShowToolbar(true);
-    } else if (!toolbarActive) {
-      setShowToolbar(false);
+  const handleSave = async () => {
+    if (!token) {
+      alert('You must be logged in to save.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`http://localhost:5000/notes/update_generated_notes/${notebook.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ generated_content: content })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Error saving generated notes:', data.error);
+        alert('Failed to save changes.');
+      } else {
+        alert('Changes saved successfully!');
+      }
+    } catch (error) {
+      console.error('Error saving generated notes:', error);
+      alert('An error occurred while saving.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  useEffect(() => {
-    document.addEventListener('mouseup', handleSelectionChange);
-    document.addEventListener('keyup', handleSelectionChange);
+  const handleGenerateFlashcards = async () => {
+    if (!token) {
+      alert('You must be logged in.');
+      return;
+    }
 
-    return () => {
-      document.removeEventListener('mouseup', handleSelectionChange);
-      document.removeEventListener('keyup', handleSelectionChange);
-    };
-  }, [toolbarActive]);
+    try {
+      const res = await fetch('http://localhost:5000/flashcards/generate_from_note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ note_id: notebook.id })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Error generating flashcards:', data.error);
+        alert('Failed to generate flashcards.');
+      } else {
+        alert('Flashcards generated successfully!');
+        router.push('/flashcards'); // Redirect to flashcards page
+      }
+    } catch (error) {
+      console.error('Error generating flashcards:', error);
+      alert('An error occurred while generating flashcards.');
+    }
+  };
 
-  if (!notebook) {
-    return <p>Notebook not found</p>;
+  if (!editor) {
+    return <div>Loading Editor...</div>;
   }
 
-  if (!isClient || !editor) {
-    return null;
-  }
+  const applyFormat = (command) => {
+    editor.chain().focus()[command]().run();
+  };
 
   return (
-    <div className="p-10 bg-white min-h-screen relative">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-4xl font-bold">{notebook.title}</h1>
-          <p className="text-lg text-gray-600">{notebook.description}</p>
-          <p className="text-md text-gray-500">{notebook.category}</p>
+    <div className="relative min-h-screen bg-white p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="space-x-4">
+          <Link href="/notes">
+            <button className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300">Back</button>
+          </Link>
+          <button onClick={handleSave} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            onClick={handleGenerateFlashcards}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Generate Flashcards
+          </button>
         </div>
-        {notebook.image && (
+      </div>
+
+      <div className="mb-6">
+        <h1 className="text-4xl font-bold">{notebook.title}</h1>
+        <p className="text-lg text-gray-600">{notebook.description}</p>
+        <p className="text-md text-gray-500">{notebook.category}</p>
+        {notebook.image_url && (
           <img
-            src={notebook.image}
+            src={notebook.image_url}
             alt={notebook.title}
-            className="w-32 h-32 object-cover rounded"
+            className="w-32 h-32 object-cover rounded mt-4"
           />
         )}
       </div>
 
-      {showToolbar && (
-        <div
-          className="toolbar-container"
-          style={{
-            top: selectionPosition.top,
-            left: selectionPosition.left,
-            zIndex: 10,
-            transform: 'translateX(-50%)',
-          }}
-        >
-          <RichTextToolbar editor={editor} setToolbarActive={setToolbarActive} />
-        </div>
-      )}
+      {/* Permanent toolbar */}
+      <div className="flex items-center space-x-2 mb-4 bg-gray-100 p-2 rounded">
+        <button onClick={() => applyFormat('toggleBold')} className="px-2 py-1 hover:bg-gray-200">Bold</button>
+        <button onClick={() => applyFormat('toggleItalic')} className="px-2 py-1 hover:bg-gray-200">Italic</button>
+        <button onClick={() => applyFormat('toggleUnderline')} className="px-2 py-1 hover:bg-gray-200">Underline</button>
+        <button onClick={() => applyFormat('toggleStrike')} className="px-2 py-1 hover:bg-gray-200">Strike</button>
+        <button onClick={() => {
+          const url = prompt("Enter URL:");
+          if (url) editor.chain().focus().setLink({ href: url }).run();
+        }} className="px-2 py-1 hover:bg-gray-200">
+          Link
+        </button>
+      </div>
 
-      <div className="editor-container mt-6">
+      <div className="editor-container mt-6 bg-white p-4 rounded shadow prose max-w-none">
         <EditorContent editor={editor} />
       </div>
     </div>

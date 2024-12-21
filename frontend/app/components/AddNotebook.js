@@ -1,139 +1,292 @@
-import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { motion } from 'framer-motion';
+// import { useState } from 'react';
 
-export default function AddNotebook({ onCreateNotebook, onClose }) {
+// export default function AddNotebook({ onClose, onCreateNotebook }) {
+//   const [title, setTitle] = useState('');
+//   const [subjectName, setSubjectName] = useState('');
+//   const [description, setDescription] = useState('');
+//   const [file, setFile] = useState(null);
+//   const [generatedNotes, setGeneratedNotes] = useState(null);
+//   const [noteId, setNoteId] = useState(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
+//   const handleSubmit = async () => {
+//     if (!title || !subjectName || !description || !file) {
+//       alert('Please fill out all fields and select an image.');
+//       return;
+//     }
+
+//     setLoading(true);
+
+//     try {
+//       // Create Subject
+//       const subjectRes = await fetch('http://localhost:5000/subjects/create', {
+//         method: 'POST',
+//         headers: {
+//           'Authorization': `Bearer ${token}`,
+//           'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ subject_name: subjectName.trim() })
+//       });
+
+//       const subjectData = await subjectRes.json();
+//       if (!subjectRes.ok) {
+//         console.error('Subject creation failed:', subjectData.error);
+//         alert('Failed to create subject. Please try again.');
+//         setLoading(false);
+//         return;
+//       }
+
+//       const subject_id = subjectData.subject_id;
+
+//       // Upload Note
+//       const formData = new FormData();
+//       formData.append('file', file);
+//       formData.append('subject_id', subject_id);
+//       formData.append('title', title);
+//       formData.append('description', description);
+
+//       const uploadRes = await fetch('http://localhost:5000/notes/upload', {
+//         method: 'POST',
+//         headers: {
+//           'Authorization': `Bearer ${token}`
+//         },
+//         body: formData
+//       });
+
+//       const uploadData = await uploadRes.json();
+//       if (!uploadRes.ok) {
+//         console.error('Upload failed:', uploadData.error);
+//         alert('Failed to upload note. Please try again.');
+//         setLoading(false);
+//         return;
+//       }
+
+//       const uploadedNoteId = uploadData.note_id;
+//       setNoteId(uploadedNoteId);
+
+//       // Generate Notes
+//       const generateRes = await fetch('http://localhost:5000/notes/generate', {
+//         method: 'POST',
+//         headers: {
+//           'Authorization': `Bearer ${token}`,
+//           'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ note_id: uploadedNoteId })
+//       });
+
+//       const generateData = await generateRes.json();
+//       if (!generateRes.ok) {
+//         console.error('Generate failed:', generateData.error);
+//         alert('Failed to generate notes. Please try again.');
+//         setLoading(false);
+//         return;
+//       }
+
+//       setGeneratedNotes(generateData.summary);
+//       setLoading(false);
+
+//       // Once notes are generated, refresh notes list
+//       if (onCreateNotebook) {
+//         await onCreateNotebook();
+//       }
+
+//     } catch (error) {
+//       console.error('Error during process:', error);
+//       alert('An error occurred. Check console for details.');
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleImageUpload = (e) => {
+//     const selectedFile = e.target.files[0];
+//     setFile(selectedFile);
+//   };
+
+//   return (
+//     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+//       <div className="bg-white p-6 rounded-lg w-1/2 relative">
+//         <h2 className="text-2xl font-bold mb-4">Create Notebook & Generate Notes</h2>
+//         <button onClick={onClose} className="absolute top-2 right-4 text-xl">X</button>
+
+//         <input
+//           type="text"
+//           placeholder="Title"
+//           value={title}
+//           onChange={(e) => setTitle(e.target.value)}
+//           className="border rounded p-2 w-full mb-4"
+//         />
+//         <input
+//           type="text"
+//           placeholder="Subject Name"
+//           value={subjectName}
+//           onChange={(e) => setSubjectName(e.target.value)}
+//           className="border rounded p-2 w-full mb-4"
+//         />
+//         <input
+//           type="file"
+//           onChange={handleImageUpload}
+//           className="border rounded p-2 w-full mb-4"
+//           accept="image/*"
+//         />
+//         <textarea
+//           placeholder="Description"
+//           value={description}
+//           onChange={(e) => setDescription(e.target.value)}
+//           className="border rounded p-2 w-full mb-4"
+//         />
+
+//         {!generatedNotes && !noteId && (
+//           <button
+//             className="bg-green-500 text-white py-2 px-4 rounded w-full"
+//             onClick={handleSubmit}
+//             disabled={loading}
+//           >
+//             {loading ? 'Processing...' : 'Create Subject & Generate Notes'}
+//           </button>
+//         )}
+
+//         {noteId && !generatedNotes && (
+//           <p className="text-center text-gray-600">Generating notes, please wait...</p>
+//         )}
+
+//         {generatedNotes && (
+//           <div className="mt-4 p-4 border rounded overflow-auto max-h-80">
+//             <h3 className="text-xl font-semibold mb-2">Generated Notes:</h3>
+//             <div
+//               className="prose max-w-none"
+//               dangerouslySetInnerHTML={{ __html: generatedNotes }}
+//             />
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+
+import { useState } from 'react';
+
+export default function AddNotebook({ onClose, onCreateNotebook }) {
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
+  const [subjectName, setSubjectName] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState(null);
-  const [image, setImage] = useState(null);
-  const [fileError, setFileError] = useState('');
-  const [imageError, setImageError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState(null);
+  const [coverImage, setCoverImage] = useState(null); // New state for cover image
+  const [generatedNotes, setGeneratedNotes] = useState(null);
+  const [noteId, setNoteId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    const allowedFormats = ['pdf', 'docx', 'pptx', 'xlsx', 'txt', 'jpeg', 'png'];
-    const maxFileSize = 10 * 1024 * 1024; // 10MB
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
-    if (selectedFile) {
-      const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
-
-      if (!allowedFormats.includes(fileExtension)) {
-        setFileError('Unsupported file format. Allowed formats: PDF, DOCX, PPTX, XLSX, TXT, JPEG, PNG.');
-        setFile(null);
-        return;
-      }
-
-      if (selectedFile.size > maxFileSize) {
-        setFileError('File size cannot exceed 10MB.');
-        setFile(null);
-        return;
-      }
-
-      setFileError('');
-      setFile(selectedFile);
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const selectedImage = e.target.files[0];
-    const allowedFormats = ['jpeg', 'png'];
-    const maxFileSize = 5 * 1024 * 1024; // 5MB
-
-    if (selectedImage) {
-      const fileExtension = selectedImage.name.split('.').pop().toLowerCase();
-
-      if (!allowedFormats.includes(fileExtension)) {
-        setImageError('Unsupported image format. Allowed formats: JPEG, PNG.');
-        setImage(null);
-        return;
-      }
-
-      if (selectedImage.size > maxFileSize) {
-        setImageError('Image size cannot exceed 5MB.');
-        setImage(null);
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-      };
-      reader.readAsDataURL(selectedImage);
-
-      setImageError('');
-    }
-  };
-
-  const handleSubmit = () => {
-    if (!title || !category || !description) {
-      alert('Please fill out all fields.');
+  const handleSubmit = async () => {
+    if (!title || !subjectName || !description || !file) {
+      alert('Please fill out all fields and select an image file for the main note.');
       return;
     }
 
-    if (fileError || imageError) {
-      alert('Please fix the file or image errors before submitting.');
-      return;
-    }
-
-    setIsLoading(true);
-    setProgress(0);
-    setError(null);
-
-    // Simulating progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          if (error) {
-            setProgress(100);
-            return;
-          }
-          setTimeout(() => {
-            setIsLoading(false);
-            onCreateNotebook({ id: uuidv4(), title, category, description, file, image });
-            onClose();
-          }, 2000); // Delay to show success message
-          return 100;
-        }
-        return prev + 10;
+    setLoading(true);
+    try {
+      // Create Subject
+      const subjectRes = await fetch('http://localhost:5000/subjects/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ subject_name: subjectName.trim() })
       });
-    }, 300);
+
+      const subjectData = await subjectRes.json();
+      if (!subjectRes.ok) {
+        console.error('Subject creation failed:', subjectData.error);
+        alert('Failed to create subject. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const subject_id = subjectData.subject_id;
+
+      // Upload Note
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('subject_id', subject_id);
+      formData.append('title', title);
+      formData.append('description', description);
+
+      if (coverImage) {
+        formData.append('cover_image', coverImage);
+      }
+
+      const uploadRes = await fetch('http://localhost:5000/notes/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) {
+        console.error('Upload failed:', uploadData.error);
+        alert('Failed to upload note. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const uploadedNoteId = uploadData.note_id;
+      setNoteId(uploadedNoteId);
+
+      // Generate Notes
+      const generateRes = await fetch('http://localhost:5000/notes/generate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ note_id: uploadedNoteId })
+      });
+
+      const generateData = await generateRes.json();
+      if (!generateRes.ok) {
+        console.error('Generate failed:', generateData.error);
+        alert('Failed to generate notes. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      setGeneratedNotes(generateData.summary);
+      setLoading(false);
+
+      // Refresh notes list
+      if (onCreateNotebook) {
+        await onCreateNotebook();
+      }
+
+    } catch (error) {
+      console.error('Error during process:', error);
+      alert('An error occurred. Check console for details.');
+      setLoading(false);
+    }
   };
 
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white p-6 rounded-lg w-1/3 relative text-center">
-          <h2
-            className={`text-xl font-bold mb-4 ${error ? 'text-red-500' : 'text-[#61cc03]'}`}
-          >
-            {error ? 'ERROR' : progress === 100 ? 'Success!' : 'Generating Notes...'}
-          </h2>
-          <motion.div
-            className={`h-4 rounded-full ${error ? 'bg-red-500' : progress === 100 ? 'bg-[#61cc03]' : 'bg-gray-300'}`}
-            initial={{ width: '0%' }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          ></motion.div>
-          <p className={`mt-4 ${error ? 'text-red-500' : 'text-gray-600'}`}>
-            {error ? 'Failed to generate notes' : progress === 100 ? 'Success!' : `Progress: ${progress}%`}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const handleImageUpload = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+  };
+
+  const handleCoverImageUpload = (e) => {
+    const selectedCoverImage = e.target.files[0];
+    setCoverImage(selectedCoverImage);
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg w-1/2 relative">
-        <h2 className="text-2xl font-bold mb-4">Create Notebook</h2>
-        <button onClick={onClose} className="absolute top-2 right-4">X</button>
-
+        <h2 className="text-2xl font-bold mb-4">Create Notebook & Generate Notes</h2>
+        <button onClick={onClose} className="absolute top-2 right-4 text-xl">X</button>
+  
         <input
           type="text"
           placeholder="Title"
@@ -141,71 +294,67 @@ export default function AddNotebook({ onCreateNotebook, onClose }) {
           onChange={(e) => setTitle(e.target.value)}
           className="border rounded p-2 w-full mb-4"
         />
-
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+        <input
+          type="text"
+          placeholder="Subject Name"
+          value={subjectName}
+          onChange={(e) => setSubjectName(e.target.value)}
           className="border rounded p-2 w-full mb-4"
-        >
-          <option value="">Category</option>
-          <option value="English">English</option>
-          <option value="Science">Science</option>
-          <option value="Social Science">Social Science</option>
-          <option value="Mathematics">Mathematics</option>
-          <option value="History">History</option>
-          <option value="Custom">Custom</option>
-        </select>
-
+        />
+  
+        {/* Add a label or helper text for the main note image */}
+        <label className="block font-semibold mb-2">
+          Upload the main note image (for OCR extraction):
+        </label>
+        <input
+          type="file"
+          onChange={handleImageUpload}
+          className="border rounded p-2 w-full mb-4"
+          accept="image/*"
+        />
+  
+        {/* Add a label or helper text for the cover image */}
+        <label className="block font-semibold mb-2">
+          Upload a cover image (optional, displayed as thumbnail):
+        </label>
+        <input
+          type="file"
+          onChange={handleCoverImageUpload}
+          className="border rounded p-2 w-full mb-4"
+          accept="image/*"
+        />
+  
         <textarea
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="border rounded p-2 w-full mb-4"
         />
-
-        <div className="mb-4">
-          <label className="block mb-2 font-medium">Upload Notes (Optional)</label>
-          <input
-            type="file"
-            accept=".pdf,.docx,.pptx,.xlsx,.txt,.jpeg,.png"
-            onChange={handleFileChange}
-            className="border rounded p-2 w-full"
-          />
-          {fileError && (
-            <p className="text-red-500 text-sm mt-2">{fileError}</p>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label className="block mb-2 font-medium">Upload Image (Optional)</label>
-          <input
-            type="file"
-            accept=".jpeg,.png"
-            onChange={handleImageChange}
-            className="border rounded p-2 w-full"
-          />
-          {imageError && (
-            <p className="text-red-500 text-sm mt-2">{imageError}</p>
-          )}
-        </div>
-
-        {image && (
-          <div className="mb-4 text-center">
-            <img
-              src={image}
-              alt="Uploaded preview"
-              className="inline-block max-w-full max-h-32 border rounded"
+  
+        {!generatedNotes && !noteId && (
+          <button
+            className="bg-green-500 text-white py-2 px-4 rounded w-full"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? 'Processing...' : 'Create Subject & Generate Notes'}
+          </button>
+        )}
+  
+        {noteId && !generatedNotes && (
+          <p className="text-center text-gray-600">Generating notes, please wait...</p>
+        )}
+  
+        {generatedNotes && (
+          <div className="mt-4 p-4 border rounded overflow-auto max-h-80">
+            <h3 className="text-xl font-semibold mb-2">Generated Notes:</h3>
+            <div
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: generatedNotes }}
             />
           </div>
         )}
-
-        <button
-          className="bg-green-500 text-white py-2 px-4 rounded w-full"
-          onClick={handleSubmit}
-        >
-          Create Notebook
-        </button>
       </div>
     </div>
-  );
+  );  
 }

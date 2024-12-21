@@ -1,3 +1,4 @@
+// frontend/app/components/EditNotebook.js
 "use client";
 import { useState } from 'react';
 
@@ -26,17 +27,17 @@ export default function EditNotebook({ notebook, onSaveChanges, onDelete, onClos
       image,
     };
     onSaveChanges(updatedNotebook); // Save the updated notebook
-    onClose(); // Close modal after save
   };
 
   const handleDelete = () => {
-    onDelete(notebook.id); // Trigger delete
-    onClose(); // Close modal after delete
+    if (window.confirm('Are you sure you want to delete this notebook?')) {
+      onDelete(notebook._id); // Pass the id to the parent for deletion
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-1/2 relative">
+      <div className="bg-white p-6 rounded-lg w-1/2 relative overflow-auto max-h-full">
         <h2 className="text-2xl font-bold mb-4">Edit Notebook</h2>
         <button onClick={onClose} className="absolute top-2 right-4 text-xl">X</button>
 
@@ -80,7 +81,7 @@ export default function EditNotebook({ notebook, onSaveChanges, onDelete, onClos
 
         <button 
           className="bg-red-500 text-white py-2 px-4 rounded w-full" 
-          onClick={handleDelete}
+          onClick={handleDelete} // Simplified delete handler
         >
           Delete Notebook
         </button>

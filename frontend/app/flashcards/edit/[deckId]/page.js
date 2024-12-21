@@ -50,42 +50,34 @@ export default function EditDeckPage() {
     }, [params.deckId, token, router]);
 
     const handleSave = async (updatedDeck) => {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      
-        if (!token) {
-          alert('Authorization token is missing. Please log in again.');
-          router.push('/login');
-          return;
-        }
-      
         try {
-          const method = params.deckId === 'new' ? 'POST' : 'PUT';
-          const url = params.deckId === 'new'
-            ? 'http://localhost:5000/flashcards/decks'
-            : `http://localhost:5000/flashcards/decks/${params.deckId}`;
-      
-          const response = await fetch(url, {
-            method,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`, // Include token
-            },
-            body: JSON.stringify(updatedDeck),
-          });
-      
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to save deck.');
-          }
-      
-          alert('Deck saved successfully.');
-          router.push('/flashcards');
+            const method = params.deckId === 'new' ? 'POST' : 'PUT';
+            const url = params.deckId === 'new'
+                ? 'http://localhost:5000/flashcards/decks'
+                : `http://localhost:5000/flashcards/decks/${params.deckId}`;
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedDeck)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json(); // Try to get error details from the server
+                const errorMessage = errorData?.error || errorData || 'Failed to save deck.';
+                console.error('Error saving deck:', errorMessage);
+                alert(errorMessage);
+            } else {
+                router.push('/flashcards');
+            }
         } catch (error) {
-          console.error('Error saving deck:', error);
-          alert(error.message);
+            console.error('Error saving deck:', error);
+            alert('Failed to save deck. Please check your network connection and try again.'); // More user-friendly message
         }
-      };
-      
+    };
 
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this deck?')) return;

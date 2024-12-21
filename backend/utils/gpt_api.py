@@ -2,6 +2,7 @@ import openai
 import logging
 import boto3
 from config import Config
+import json
 
 class GPTManager:
     def __init__(self):
@@ -75,6 +76,55 @@ class GPTManager:
             raise
         except Exception as e:
             logging.error(f"Unexpected error during note generation: {e}", exc_info=True)
+            raise
+
+    def generate_flashcards(self, text: str):
+        """
+        Generate flashcards from the provided text.
+
+        We prompt the model to create a list of flashcards, each with a "term" and "definition".
+        The model should return valid JSON so we can parse it.
+        """
+        try:
+            prompt = (
+                "You are a professional educator. Given the following text, extract the key concepts and create a set of flashcards. "
+                "Each flashcard should have a 'term' and a 'definition' explaining the concept simply and clearly. "
+                "Return the flashcards in strict JSON format as a list of objects, for example:\n"
+                "[{\"term\": \"Term1\", \"definition\": \"Definition for Term1\"}, {\"term\": \"Term2\", \"definition\": \"Definition for Term2\"}, ...]"
+            )
+
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": f"Text:\n\n{text}\n\nPlease produce flashcards now."}
+                ],
+                temperature=0.7,
+                max_tokens=1500
+            )
+
+            content = response['choices'][0]['message']['content'].strip()
+            # Attempt to parse JSON
+            flashcards = json.loads(content)
+            # Validate the structure
+            if not isinstance(flashcards, list):
+                raise ValueError("Flashcards JSON is not a list.")
+
+            # Ensure each flashcard has 'term' and 'definition'
+            for fc in flashcards:
+                if 'term' not in fc or 'definition' not in fc:
+                    raise ValueError("A flashcard is missing 'term' or 'definition'.")
+
+            return flashcards
+
+        except (json.JSONDecodeError, ValueError) as e:
+            logging.error(f"Error parsing flashcards JSON: {e}", exc_info=True)
+            raise ValueError("Failed to parse flashcards from model response.")
+        except openai.error.OpenAIError as e:
+            logging.error(f"OpenAI error during flashcard generation: {e}", exc_info=True)
+            raise
+        except Exception as e:
+            logging.error(f"Unexpected error during flashcard generation: {e}", exc_info=True)
             raise
 
 # Create a default instance

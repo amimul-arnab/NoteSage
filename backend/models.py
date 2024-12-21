@@ -8,15 +8,17 @@ class User:
         self.full_name = full_name
         self.created_at = datetime.utcnow()
 
+
 class Note:
-    def __init__(self, user_id, filename, s3_url, subject_id=None, content_type=None):
+    def __init__(self, user_id, title, description, filename, s3_url, subject_id=None):
         self.user_id = user_id
+        self.title = title
+        self.description = description
         self.filename = filename
         self.s3_url = s3_url
         self.subject_id = subject_id  # Reference to the Subject
         self.created_at = datetime.utcnow()
         self.status = 'pending'
-        self.content_type = content_type  # Added field for MIME type of the uploaded file
 
 class GeneratedNote:
     def __init__(self, user_id, original_note_id, content, subject_id=None):

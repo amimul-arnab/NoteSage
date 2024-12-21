@@ -1,38 +1,109 @@
 "use client";
-import NotebookPage from '@/app/components/NotebookPage'; // Ensure correct import path
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import Navbar from "../../components/Navbar";
+import NotebookPage from "../../components/NotebookPage";
 
 export default function DynamicNotebookPage() {
-  const { notebookId } = useParams(); // Get the notebookId from the URL
+  const params = useParams();
+  const { notebookId } = params;
   const [notebook, setNotebook] = useState(null);
-  const [content, setContent] = useState(''); // State for editor content
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   useEffect(() => {
-    const storedNotebooks = JSON.parse(localStorage.getItem('notebooks')) || [];
-    const currentNotebook = storedNotebooks.find((nb) => nb.id === notebookId);
-
-    if (currentNotebook) {
-      setNotebook(currentNotebook);
-      const savedContent = localStorage.getItem(`notebook-${notebookId}`);
-      setContent(savedContent || ''); // Load saved content from localStorage or empty string
+    if (!notebookId) {
+      setError("Notebook ID is missing.");
+      setLoading(false);
+      return;
     }
-  }, [notebookId]);
+
+    const fetchNotebook = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/notes/get/${notebookId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error || "Failed to fetch notebook.");
+          setLoading(false);
+          return;
+        }
+
+        const foundNotebook = data.note;
+
+        if (foundNotebook) {
+          setNotebook({
+            id: foundNotebook._id,
+            title: foundNotebook.title,
+            description: foundNotebook.description,
+            category: foundNotebook.subject_name,
+            image_url: foundNotebook.image_url, 
+            generatedContent: foundNotebook.generated_content || "",
+          });
+        } else {
+          setError("Notebook not found.");
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching notebook:", err);
+        setError("An error occurred while fetching the notebook.");
+        setLoading(false);
+      }
+    };
+
+    fetchNotebook();
+  }, [notebookId, token]);
+
+  if (loading) {
+    return (
+      <div className="flex">
+        <Navbar isOpen={true} onToggle={() => {}} activePage="notes" />
+        <div className="p-10 w-full bg-[#f9faf9] min-h-screen flex items-center justify-center">
+          <p>Loading notebook...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex">
+        <Navbar isOpen={true} onToggle={() => {}} activePage="notes" />
+        <div className="p-10 w-full bg-[#f9faf9] min-h-screen flex items-center justify-center">
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!notebook) {
-    return <p>Notebook not found</p>; // Show a message if the notebook is not found
+    return (
+      <div className="flex">
+        <Navbar isOpen={true} onToggle={() => {}} activePage="notes" />
+        <div className="p-10 w-full bg-[#f9faf9] min-h-screen flex items-center justify-center">
+          <p>Notebook not found.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto mt-6 max-w-4xl p-8 bg-white shadow-md rounded-lg min-h-screen">
-      {/* Render NotebookPage */}
-      <NotebookPage
-        title={notebook.title}
-        description={notebook.description}
-        category={notebook.category}
-        image={notebook.image}
-        content={content}
-      />
+    <div className="flex">
+      <Navbar isOpen={true} onToggle={() => {}} activePage="notes" />
+      <main
+        className="p-10 w-full bg-[#f9faf9] min-h-screen transition-all duration-300 ml-64"
+      >
+        <NotebookPage notebook={notebook} />
+      </main>
     </div>
   );
 }

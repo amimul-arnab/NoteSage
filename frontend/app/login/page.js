@@ -64,8 +64,8 @@ export default function LoginPage() {
             <Image
               src={LogoLight}
               alt="NoteSage Logo"
-              width={300}
-              height={300}
+              width={150}
+              height={150}
               className="object-contain"
             />
           </Link>
@@ -76,11 +76,11 @@ export default function LoginPage() {
         >
           Sign In
         </h2>
-        <form className="space-y-6 flex flex-col items-center max-w-md mx-auto p-6 sm:p-8 bg-white shadow-md rounded-lg" onSubmit={handleLogin}>
+        <form className="space-y-6" onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="Email"
-            className="w-full p-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-5 border border-gray-300 rounded-full"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -94,19 +94,24 @@ export default function LoginPage() {
             required
           />
           {errorMessage && (
-            <div className="text-red-500 text-center text-sm">{errorMessage}</div>
+            <div className="text-red-500 text-center">{errorMessage}</div>
           )}
           <div className="mt-8">
-            <button
-              type="submit"
-              className={`w-full p-4 font-semibold rounded-full text-white ${
-                isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#61cc03]"
-              }`}
-              style={{ width: "250px", margin: "0 auto", display: "block" }}
-              disabled={isLoading}
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </button>
+              <button
+                type="submit"
+                className={`w-full p-4 font-semibold rounded-full text-white ${
+                  isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#61cc03]"
+                }`}
+                style={{ width: "250px", margin: "0 auto", display: "block" }}
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing in..." : "Sign In"}
+              </button>
+            </motion.div>
           </div>
         </form>
         <div className="flex items-center my-6">

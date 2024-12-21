@@ -33,12 +33,17 @@ def create_subject():
             'subject_name': subject_name,
             'created_at': datetime.utcnow()
         }
-        subjects_collection.insert_one(new_subject)
+        result = subjects_collection.insert_one(new_subject)
 
-        return jsonify({'message': 'Subject created successfully', 'subject_name': subject_name}), 201
+        return jsonify({
+            'message': 'Subject created successfully', 
+            'subject_name': subject_name,
+            'subject_id': str(result.inserted_id)  # Return the subject_id
+        }), 201
     except Exception as e:
-        logging.error(f"Create subject error: {e}")
+        logging.error(f"Create subject error: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error'}), 500
+
 
 @subjects_bp.route('/list', methods=['GET'])
 @jwt_required()
