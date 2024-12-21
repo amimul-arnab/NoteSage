@@ -586,60 +586,70 @@ const DynamicTestPage = () => {
         {questionType === QUESTION_TYPES.WRITTEN.type && (
           <QuestionWritten {...commonProps} />
         )}
-       <button
-            onClick={async () => {
-              setShowSaveModal(true);
-              setSaveStatus('saving');
-              
-              const result = await saveAllProgress();
-              
-              if (result.success) {
-                setSaveStatus('success');
-                setTimeout(() => {
-                  setShowSaveModal(false);
-                  router.push('/test');
-                }, 1500);
-              } else {
-                setSaveStatus('error');
-                setSaveError(result.error || 'Failed to save progress');
-              }
-            }}
-            className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors"
-          >
-            <X size={24} />
+        <button
+          onClick={async () => {
+            setShowSaveModal(true);
+            setSaveStatus('saving');
+            
+            const result = await saveAllProgress();
+            
+            if (result.success) {
+              setSaveStatus('success');
+              setTimeout(() => {
+                setShowSaveModal(false);
+                router.push('/test');
+              }, 1500);
+            } else {
+              setSaveStatus('error');
+              setSaveError(result.error || 'Failed to save progress');
+            }
+          }}
+          className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors"
+        >
+          <X size={24} />
         </button>
       </div>
-
+  
       <button
         onClick={resetProgress}
         className="fixed bottom-6 right-6 p-3 bg-gray-100 text-gray-700 rounded shadow hover:bg-gray-200 transition-all"
       >
         Clear Progress
       </button>
-
+  
+      {/* ProgressBar with responsive height and width */}
       <ProgressBar
-            totalCards={deck.cards.length}
-            learnedCount={cardStates ? Array.from(cardStates.values()).filter(state => 
-              state.status === 'learned').length : 0}
-            masteredCount={cardStates ? Array.from(cardStates.values()).filter(state => 
-              state.status === 'mastered').length : 0}
-            className="fixed bottom-0 left-0 w-full"
-            showLabels={false}
-       />
-        <SaveModal 
-          isOpen={showSaveModal}
-          onClose={() => {
-            if (saveStatus === 'success') {
-              router.push('/test');
-            }
-            setShowSaveModal(false);
-          }}
-          status={saveStatus}
-          error={saveError}
-        />
+        totalCards={deck.cards.length}
+        learnedCount={
+          cardStates
+            ? Array.from(cardStates.values()).filter(state => state.status === 'learned').length
+            : 0
+        }
+        masteredCount={
+          cardStates
+            ? Array.from(cardStates.values()).filter(state => state.status === 'mastered').length
+            : 0
+        }
+        className="fixed bottom-0 left-0 w-full h-4 sm:h-6" // Adjust height for mobile
+        showLabels={false}
+      />
+  
+      {/* SaveModal adjusted for responsiveness */}
+      <SaveModal
+        isOpen={showSaveModal}
+        onClose={() => {
+          if (saveStatus === 'success') {
+            router.push('/test');
+          }
+          setShowSaveModal(false);
+        }}
+        status={saveStatus}
+        error={saveError}
+        className="max-w-xs sm:max-w-sm mx-auto" // Responsive modal
+      />
     </div>
-
   );
+  
 };
 
 export default DynamicTestPage;
