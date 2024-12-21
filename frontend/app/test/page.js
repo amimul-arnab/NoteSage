@@ -134,6 +134,12 @@ export default function TestPage() {
                 <TestUI
                   key={deck._id}
                   deck={deck}
+                  progress={{
+                    learned: deck.progress_counts?.learned || 0,
+                    mastered: deck.progress_counts?.mastered || 0,
+                    unfamiliar: deck.progress_counts?.unfamiliar || 0,
+                    total: deck.progress_counts?.total || deck.cards.length
+                  }}
                   onLearn={() => router.push(`/test/${deck._id}`)}
                 />
               ))}

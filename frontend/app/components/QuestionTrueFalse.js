@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ProgressBar from './ProgressBar';
+import withProgressTracking from './withProgressTracking';
 
 const QuestionTrueFalse = ({ 
   term, 
@@ -113,4 +114,4 @@ const QuestionTrueFalse = ({
   );
 };
 
-export default QuestionTrueFalse;
+export default withProgressTracking(QuestionTrueFalse);

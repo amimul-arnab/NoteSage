@@ -121,24 +121,6 @@ const DynamicTestPage = () => {
     return isDefinition ? randomCard.definition : randomCard.term;
   };
 
-  // Calculate progress based on card states
-  const calculateProgress = (cards) => {
-    const totalCards = cards.length;
-    const learned = cards.filter((c) => c.learned && !c.mastered).length;
-    const mastered = cards.filter((c) => c.mastered).length;
-    const unfamiliar = totalCards - learned - mastered;
-
-    return {
-      learned: (learned / totalCards) * 100,
-      mastered: (mastered / totalCards) * 100,
-      unfamiliar: (unfamiliar / totalCards) * 100,
-      counts: {
-        learned,
-        mastered,
-        unfamiliar,
-      },
-    };
-  };
 
   // Save all progress to the server
   const saveAllProgress = async () => {
@@ -147,19 +129,11 @@ const DynamicTestPage = () => {
 
       const states = Array.from(cardStates.entries());
       const currentProgress = {
-        learned: states
-          .filter(([_, state]) => state.status === 'learned')
-          .map(([index]) => index),
-        mastered: states
-          .filter(([_, state]) => state.status === 'mastered')
-          .map(([index]) => index),
-        unfamiliar: states
-          .filter(([_, state]) => state.status === 'unfamiliar')
-          .map(([index]) => index),
+        learned: states.filter(([_, state]) => state.status === 'learned').map(([index]) => index),
+        mastered: states.filter(([_, state]) => state.status === 'mastered').map(([index]) => index),
+        unfamiliar: states.filter(([_, state]) => state.status === 'unfamiliar').map(([index]) => index)
       };
-
-      console.log('Preparing to save progress:', currentProgress);
-
+  
       const cardStatesObj = {};
       cardStates.forEach((state, index) => {
         cardStatesObj[index] = {
@@ -186,23 +160,19 @@ const DynamicTestPage = () => {
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error('Error saving progress:', error);
-        return { success: false, error: error.message || 'Failed to save progress' };
+        throw new Error('Failed to save final progress');
       }
-
-      console.log('Progress saved successfully');
+  
       return { success: true };
     } catch (error) {
       console.error('Error in saveAllProgress:', error);
       return { success: false, error: error.message };
     }
   };
-
-  // Save progress and update UI accordingly
-  const saveProgress = async (updatedDeck) => {
-    if (!updatedDeck) return;
-
+  
+  const saveQuietProgress = async () => {
+    if (!deck || !currentCard) return;
+  
     try {
       setSaveStatus('saving');
       setShowSaveModal(true);
@@ -217,9 +187,67 @@ const DynamicTestPage = () => {
           .map(([index]) => index),
         unfamiliar: states
           .filter(([_, state]) => state.status === 'unfamiliar')
+          .map(([index]) => index)
+      };
+  
+      const token = localStorage.getItem('access_token');
+      await fetch(
+        `http://localhost:5000/flashcards/decks/${params.deckId}/progress`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            progress: currentProgress,
+            cardStates: Object.fromEntries(
+              Array.from(cardStates.entries()).map(([index, state]) => [
+                index,
+                {
+                  streak: state.streak,
+                  status: state.status,
+                  lastAnswered: state.lastAnswered
+                }
+              ])
+            )
+          }),
+        }
+      );
+  
+      // Update local progress state without showing modal
+      const totalCards = deck.cards.length;
+      setProgress({
+        learned: (currentProgress.learned.length / totalCards) * 100,
+        mastered: (currentProgress.mastered.length / totalCards) * 100,
+        unfamiliar: (currentProgress.unfamiliar.length / totalCards) * 100,
+      });
+  
+    } catch (error) {
+      console.error('Error in quiet save:', error);
+    }
+  };
+
+  const saveProgress = async (updatedDeck) => {
+    if (!updatedDeck) return;
+  
+    try {
+      setSaveStatus('saving');
+      setShowSaveModal(true);
+  
+      const states = Array.from(cardStates.entries());
+      const currentProgress = {
+        learned: states
+          .filter(([_, state]) => state.status === 'learned')
+          .map(([index]) => index),
+        mastered: states
+          .filter(([_, state]) => state.status === 'mastered')
+          .map(([index]) => index),
+        unfamiliar: states
+          .filter(([_, state]) => state.status === 'unfamiliar')
           .map(([index]) => index),
       };
-
+  
       const token = localStorage.getItem('access_token');
       const response = await fetch(
         `http://localhost:5000/flashcards/decks/${params.deckId}/progress`,
@@ -230,8 +258,7 @@ const DynamicTestPage = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            progress: currentProgress,
-            cardStates: Object.fromEntries(cardStates),
+            progress: currentProgress
           }),
         }
       );
@@ -247,14 +274,15 @@ const DynamicTestPage = () => {
         mastered: (currentProgress.mastered.length / totalCards) * 100,
         unfamiliar: (currentProgress.unfamiliar.length / totalCards) * 100,
       });
-
+  
       setDeck({ ...updatedDeck });
       setSaveStatus('success');
-
+  
       // Auto-close success message after 1.5 seconds
       setTimeout(() => {
         setShowSaveModal(false);
       }, 1500);
+  
     } catch (error) {
       console.error('Error saving progress:', error);
       setSaveStatus('error');
@@ -297,29 +325,23 @@ const DynamicTestPage = () => {
     console.log('Progress reset successfully');
   };
 
-  // Handle user's answer
-  const handleAnswer = (isCorrect) => {
+  const handleAnswer = async (isCorrect) => {
     if (!deck || !currentCard) return;
-
-    const cardIndex = deck.cards.findIndex((c) => c.id === currentCard.id);
-    setCardStates((prevStates) => {
+  
+    setCardStates(prevStates => {
       const newStates = new Map(prevStates);
-      const currentState =
-        newStates.get(cardIndex) || {
-          streak: 0,
-          status: 'unfamiliar',
-          lastAnswered: null,
-        };
-
-      let newStreak = isCorrect
-        ? currentState.streak + 1
-        : currentState.streak - 1;
+      const cardIndex = deck.cards.findIndex(c => c.id === currentCard.id);
+      const currentState = newStates.get(cardIndex) || { 
+        streak: 0, 
+        status: 'unfamiliar',
+        lastAnswered: null 
+      };
+  
+      let newStreak = isCorrect ? currentState.streak + 1 : currentState.streak - 1;
       let newStatus = currentState.status;
-
-      if (
-        newStreak >= STREAK_THRESHOLDS.MASTERY &&
-        newStatus === 'learned'
-      ) {
+  
+      // Handle status transitions
+      if (newStreak >= STREAK_THRESHOLDS.MASTERY && newStatus === 'learned') {
         newStatus = 'mastered';
       } else if (
         newStreak >= STREAK_THRESHOLDS.LEARNED &&
@@ -331,36 +353,34 @@ const DynamicTestPage = () => {
           newStatus === 'mastered' ? 'learned' : 'unfamiliar';
         newStreak = 0;
       }
-
+  
       newStates.set(cardIndex, {
         streak: newStreak,
         status: newStatus,
         lastAnswered: new Date(),
       });
-
-      // Update deck
-      const updatedDeck = { ...deck };
-      updatedDeck.cards = updatedDeck.cards.map((card, index) => {
-        if (index === cardIndex) {
-          return {
-            ...card,
-            learned: newStatus === 'learned' || newStatus === 'mastered',
-            mastered: newStatus === 'mastered',
-            consecutiveCorrect: newStreak,
-          };
-        }
-        return card;
-      });
-
-      // Save progress and select next card using the updated deck
-      saveProgress(updatedDeck);
-      selectNextCard(updatedDeck);
-
+  
       return newStates;
     });
+  
+    const updatedDeck = { ...deck };
+    const cardIndex = updatedDeck.cards.findIndex(c => c.id === currentCard.id);
+    const state = cardStates.get(cardIndex);
+    
+    if (state) {
+      const card = updatedDeck.cards[cardIndex];
+      card.learned = state.status === 'learned' || state.status === 'mastered';
+      card.mastered = state.status === 'mastered';
+      card.consecutiveCorrect = state.streak;
+    }
+  
+    // Quiet save after updating state
+    await saveQuietProgress();
+    
+    // Select next card
+    selectNextCard(updatedDeck);
   };
 
-  // Select the next card to display
   const selectNextCard = (currentDeck) => {
     if (!currentDeck?.cards?.length) return;
 
@@ -425,81 +445,6 @@ const DynamicTestPage = () => {
   const loadDeck = async () => {
     try {
       setLoading(true);
-      const cachedDeck = localStorage.getItem(`deck_${params.deckId}`);
-
-      if (cachedDeck) {
-        const currentDeck = JSON.parse(cachedDeck);
-        initializeDeck(currentDeck);
-      } else {
-        const token = localStorage.getItem('access_token');
-        const response = await fetch(
-          `http://localhost:5000/flashcards/decks/${params.deckId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (!response.ok) {
-          const error = await response.json();
-          console.error('Failed to load deck:', error);
-          setError(error.message || 'Failed to load deck');
-          return;
-        }
-
-        const currentDeck = await response.json();
-        currentDeck.cards = currentDeck.cards.map((card) => ({
-          ...card,
-          learned: card.learned || false,
-          mastered: card.mastered || false,
-          consecutiveCorrect: card.consecutiveCorrect || 0,
-          wrongStreak: card.wrongStreak || 0,
-        }));
-
-        localStorage.setItem(
-          `deck_${params.deckId}`,
-          JSON.stringify(currentDeck)
-        );
-        initializeDeck(currentDeck);
-      }
-    } catch (error) {
-      console.error('Error loading deck:', error);
-      setError('Failed to load deck');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initialize deck and related states
-  const initializeDeck = (currentDeck) => {
-    const initialCardStates = new Map();
-    currentDeck.cards.forEach((card, index) => {
-      const status = card.mastered
-        ? 'mastered'
-        : card.learned
-        ? 'learned'
-        : 'unfamiliar';
-      initialCardStates.set(index, {
-        streak: card.consecutiveCorrect || 0,
-        status,
-        lastAnswered: null,
-      });
-    });
-
-    setCardStates(initialCardStates);
-    const newProgress = calculateProgress(currentDeck.cards);
-    setProgress({
-      learned: newProgress.learned,
-      mastered: newProgress.mastered,
-      unfamiliar: newProgress.unfamiliar,
-    });
-
-    setDeck(currentDeck);
-    selectNextCard(currentDeck);
-  };
-
-  // Handle manual "Learn" action (if applicable)
-  const handleLearn = async () => {
-    try {
       const token = localStorage.getItem('access_token');
       const response = await fetch(
         `http://localhost:5000/flashcards/decks/${params.deckId}`,
@@ -507,51 +452,97 @@ const DynamicTestPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
+  
       if (!response.ok) {
         const error = await response.json();
-        console.error('Failed to fetch deck progress:', error);
+        console.error('Failed to load deck:', error);
+        setError(error.message || 'Failed to load deck');
         return;
       }
-
-      const updatedDeck = await response.json();
-      console.log('Fetched deck progress:', updatedDeck);
-
-      // Update the deck state with the latest progress
-      updatedDeck.cards = updatedDeck.cards.map((card) => ({
-        ...card,
-        learned: card.learned || false,
-        mastered: card.mastered || false,
-        consecutiveCorrect: card.consecutiveCorrect || 0,
-        wrongStreak: card.wrongStreak || 0,
-      }));
-
-      setDeck(updatedDeck);
-
-      // Recalculate and update progress
-      const totalCards = updatedDeck.cards.length;
-      const learned = updatedDeck.cards.filter(
-        (c) => c.learned && !c.mastered
-      ).length;
-      const mastered = updatedDeck.cards.filter(
-        (c) => c.mastered
-      ).length;
-
+  
+      const currentDeck = await response.json();
+      console.log('Loaded deck data:', currentDeck); // Debug log
+  
+      // Initialize card states from saved progress
+      const initialCardStates = new Map();
+      
+      // If we have saved progress, use it
+      if (currentDeck.progress) {
+        currentDeck.cards.forEach((card, index) => {
+          let status = 'unfamiliar';
+          let streak = 0;
+  
+          // Determine status based on saved progress
+          if (currentDeck.progress.mastered.includes(index)) {
+            status = 'mastered';
+            streak = STREAK_THRESHOLDS.MASTERY;
+          } else if (currentDeck.progress.learned.includes(index)) {
+            status = 'learned';
+            streak = STREAK_THRESHOLDS.LEARNED;
+          }
+  
+          // If we have saved cardStates, use those values
+          if (currentDeck.cardStates && currentDeck.cardStates[index]) {
+            const savedState = currentDeck.cardStates[index];
+            status = savedState.status;
+            streak = savedState.streak;
+          }
+  
+          initialCardStates.set(index, {
+            streak,
+            status,
+            lastAnswered: currentDeck.cardStates?.[index]?.lastAnswered || null
+          });
+  
+          // Update card properties
+          card.learned = status === 'learned' || status === 'mastered';
+          card.mastered = status === 'mastered';
+          card.consecutiveCorrect = streak;
+        });
+      } else {
+        // Initialize fresh states if no saved progress
+        currentDeck.cards.forEach((card, index) => {
+          initialCardStates.set(index, {
+            streak: 0,
+            status: 'unfamiliar',
+            lastAnswered: null
+          });
+        });
+      }
+  
+      // Set states
+      setCardStates(initialCardStates);
+  
+      // Calculate and set progress
+      const totalCards = currentDeck.cards.length;
+      const learnedCount = Array.from(initialCardStates.values())
+        .filter(state => state.status === 'learned').length;
+      const masteredCount = Array.from(initialCardStates.values())
+        .filter(state => state.status === 'mastered').length;
+  
       setProgress({
-        learned: (learned / totalCards) * 100,
-        mastered: (mastered / totalCards) * 100,
-        unfamiliar:
-          ((totalCards - (learned + mastered)) / totalCards) * 100,
+        learned: (learnedCount / totalCards) * 100,
+        mastered: (masteredCount / totalCards) * 100,
+        unfamiliar: ((totalCards - learnedCount - masteredCount) / totalCards) * 100
       });
-
-      // Navigate to the learning screen
-      router.push(`/test/${params.deckId}`);
+  
+      console.log('Initialized progress:', {
+        learned: learnedCount,
+        mastered: masteredCount,
+        unfamiliar: totalCards - learnedCount - masteredCount
+      }); // Debug log
+  
+      setDeck(currentDeck);
+      selectNextCard(currentDeck);
     } catch (error) {
-      console.error('Error in handleLearn:', error);
+      console.error('Error loading deck:', error);
+      setError('Failed to load deck');
+    } finally {
+      setLoading(false);
     }
   };
+  
 
-  // Load deck on component mount or when deckId changes
   useEffect(() => {
     loadDeck();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -591,17 +582,22 @@ const DynamicTestPage = () => {
     term: isTermQuestion ? currentCard.term : currentCard.definition,
     correctAnswer: isTermQuestion ? currentCard.definition : currentCard.term,
     onAnswer: handleAnswer,
+    saveQuietProgress: saveQuietProgress, // Add this to enable auto-saving
     progress: {
       totalCards: deck.cards.length,
-      learnedCount: Array.from(cardStates.values()).filter(
-        (state) => state.status === 'learned'
-      ).length,
-      masteredCount: Array.from(cardStates.values()).filter(
-        (state) => state.status === 'mastered'
-      ).length,
+      learnedCount: Array.from(cardStates.values()).filter(state => 
+        state.status === 'learned').length,
+      masteredCount: Array.from(cardStates.values()).filter(state => 
+        state.status === 'mastered').length,
+      unfamiliarCount: deck.cards.length - 
+        Array.from(cardStates.values()).filter(state => 
+          state.status === 'learned' || state.status === 'mastered'
+        ).length
     },
     deckTitle: deck.title,
     isTermQuestion,
+    cardStates: cardStates, // Add this to track state
+    currentProgress: progress, // Add this for overall progress
   };
 
   return (
@@ -631,30 +627,27 @@ const DynamicTestPage = () => {
         {questionType === QUESTION_TYPES.WRITTEN.type && (
           <QuestionWritten {...commonProps} />
         )}
-
-        {/* Save Progress Button */}
-        <button
-          onClick={async () => {
-            setShowSaveModal(true);
-            setSaveStatus('saving');
-
-            const result = await saveAllProgress();
-
-            if (result.success) {
-              setSaveStatus('success');
-              // Wait for 1 second to show success message
-              setTimeout(() => {
-                setShowSaveModal(false);
-                router.push('/test');
-              }, 1000);
-            } else {
-              setSaveStatus('error');
-              setSaveError(result.error || 'Failed to save progress');
-            }
-          }}
-          className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors"
-        >
-          <X size={24} />
+       <button
+            onClick={async () => {
+              setShowSaveModal(true);
+              setSaveStatus('saving');
+              
+              const result = await saveAllProgress();
+              
+              if (result.success) {
+                setSaveStatus('success');
+                setTimeout(() => {
+                  setShowSaveModal(false);
+                  router.push('/test');
+                }, 1500);
+              } else {
+                setSaveStatus('error');
+                setSaveError(result.error || 'Failed to save progress');
+              }
+            }}
+            className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-200 transition-colors"
+          >
+            <X size={24} />
         </button>
       </div>
 
