@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ProgressBar from './ProgressBar';
+import withProgressTracking from './withProgressTracking';
 
 const QuestionWritten = ({ 
   term, 
@@ -136,4 +137,5 @@ const QuestionWritten = ({
   );
 };
 
-export default QuestionWritten;
+export default withProgressTracking(QuestionWritten);
+

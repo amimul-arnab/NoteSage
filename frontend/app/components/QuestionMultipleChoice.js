@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { shuffle } from 'lodash';
 import ProgressBar from './ProgressBar';
+import withProgressTracking from './withProgressTracking';
 
 const QuestionMultipleChoice = ({ 
   term,  // This will be the question (term or definition)
@@ -108,4 +109,4 @@ const QuestionMultipleChoice = ({
   );
 };
 
-export default QuestionMultipleChoice;
+export default withProgressTracking(QuestionMultipleChoice);
